@@ -4,7 +4,7 @@ import {readFileSync, writeFileSync} from 'fs';
 import {dirname, join, resolve, sep} from 'path';
 import {Command} from 'commander';
 import gradient from 'gradient-string';
-import {getUser, initDeezerApi, searchMusic, parseInfo, getDiscography} from 'gerdur-core';
+import {getUser, initDeezerApi, searchMusic, parseInfo, getDiscography, resolveDownloadUrls} from 'gerdur-core';
 import prompts from 'prompts';
 import logUpdate from 'log-update';
 import PQueue from 'p-queue';
@@ -261,6 +261,35 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
       const savedFiles: string[] = [];
       let m3u8: string[] = [];
 
+      // One batched get_url for the whole selection instead of a request per track.
+      // Deezer returns the best licensed format, so pass an ordered preference list.
+      const QUALITY_PREF: {[k: string]: number[]} = {
+        '1': [1],
+        '128': [1],
+        '3': [3, 1],
+        '320': [3, 1],
+        '9': [9, 3, 1],
+        flac: [9, 3, 1],
+      };
+      const prefetchedUrls = new Map<
+        string,
+        {trackUrl: string; isEncrypted: boolean; fileSize: number; format: string}
+      >();
+      if (data.tracks.length > 1 && !process.env.SIMULATE) {
+        try {
+          const base = QUALITY_PREF[String(options.quality).toLowerCase()] ?? [3, 1];
+          const pref = fallbackQuality ? base : [base[0]];
+          const resolved = await resolveDownloadUrls(data.tracks, pref);
+          resolved.forEach((r, i) => {
+            if (r) {
+              prefetchedUrls.set(data.tracks[i].SNG_ID, r);
+            }
+          });
+        } catch {
+          // batch resolve failed wholesale — every track falls back to per-track resolution
+        }
+      }
+
       await queue.addAll(
         data.tracks.map((track, index) => {
           return async () => {
@@ -276,6 +305,7 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
               fallbackQuality,
               overwrite,
               message: `(${index}/${(data as any).tracks.length})`,
+              prefetched: prefetchedUrls.get(track.SNG_ID) ?? null,
             });
 
             // Add to saved list

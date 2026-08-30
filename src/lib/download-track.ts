@@ -3,7 +3,7 @@ import stream from 'stream';
 import {existsSync, mkdirSync, writeFileSync, createWriteStream, readFileSync, statSync, unlinkSync} from 'fs';
 import {promisify} from 'util';
 import {dirname} from 'path';
-import {GeoBlocked, getTrackDownloadUrl, addTrackTags} from 'gerdur-core';
+import {GeoBlocked, getTrackDownloadUrl, addTrackTags, httpAgent, httpsAgent} from 'gerdur-core';
 import logUpdate from 'log-update';
 import chalk from 'chalk';
 import signale from '../lib/signale';
@@ -13,6 +13,9 @@ import type {trackType} from 'gerdur-core/types';
 
 const pipeline = promisify(stream.pipeline);
 const simulate = process.env.SIMULATE;
+
+/** media-API format string -> gerdur's numeric quality */
+const FORMAT_TO_QUALITY: {[format: string]: number} = {FLAC: 9, MP3_320: 3, MP3_256: 3, MP3_128: 1, MP3_64: 1};
 
 interface downloadTrackProps {
   track: trackType;
@@ -32,6 +35,13 @@ interface downloadTrackProps {
   isQualityFallback?: boolean;
   overwrite?: boolean;
   message?: string;
+  /**
+   * A download URL already resolved for this track by a batch `resolveDownloadUrls`
+   * pass. When set, the per-track `get_url` request and quality-fallback round-trips
+   * are skipped and `quality` is taken from the format Deezer actually granted.
+   * Falls through to the normal path when absent or `null` (track not in the batch).
+   */
+  prefetched?: {trackUrl: string; isEncrypted: boolean; fileSize: number; format: string} | null;
 }
 
 const downloadTrack = async ({
@@ -48,6 +58,7 @@ const downloadTrack = async ({
   isQualityFallback = false,
   overwrite = false,
   message = '',
+  prefetched = null,
 }: downloadTrackProps): Promise<string | undefined> => {
   logUpdate(signale.pending(track.SNG_TITLE + ' by ' + track.ART_NAME + ' from ' + track.ALB_TITLE));
   try {
@@ -55,6 +66,13 @@ const downloadTrack = async ({
       fileSize = 0,
       downloaded = 0,
       coverSize = 500;
+
+    // A batch resolve already picked the best licensed format for this track —
+    // align `quality` with it so the extension, cover size and file size match.
+    if (prefetched && FORMAT_TO_QUALITY[prefetched.format]) {
+      quality = FORMAT_TO_QUALITY[prefetched.format];
+    }
+
     switch (quality) {
       case 1:
       case '1':
@@ -92,11 +110,15 @@ const downloadTrack = async ({
     }
 
     let trackData;
-    try {
-      trackData = await getTrackDownloadUrl(track, quality);
-    } catch (err) {
-      if (!(err instanceof GeoBlocked) || !track.FALLBACK) {
-        throw err;
+    if (prefetched) {
+      trackData = prefetched;
+    } else {
+      try {
+        trackData = await getTrackDownloadUrl(track, quality);
+      } catch (err) {
+        if (!(err instanceof GeoBlocked) || !track.FALLBACK) {
+          throw err;
+        }
       }
     }
 
@@ -153,16 +175,22 @@ const downloadTrack = async ({
     const humanSizeTotal = (fileSize / 1024 / 1024).toFixed(2);
     let transferredLast = downloaded;
     await pipeline(
-      got.stream(trackData.trackUrl, {responseType: 'buffer', headers}).on('downloadProgress', ({transferred}) => {
-        // Report download progress
-        transferred += downloaded;
-        if (transferred - transferredLast > 50000) {
-          transferredLast = transferred;
-          logUpdate(
-            signale.info(`Downloading ${track.SNG_TITLE} ${message}\n  ${bar(transferred)} | ${humanSizeTotal}MiB`),
-          );
-        }
-      }),
+      got
+        .stream(trackData.trackUrl, {
+          responseType: 'buffer',
+          headers,
+          agent: {http: httpAgent, https: httpsAgent},
+        })
+        .on('downloadProgress', ({transferred}) => {
+          // Report download progress
+          transferred += downloaded;
+          if (transferred - transferredLast > 50000) {
+            transferredLast = transferred;
+            logUpdate(
+              signale.info(`Downloading ${track.SNG_TITLE} ${message}\n  ${bar(transferred)} | ${humanSizeTotal}MiB`),
+            );
+          }
+        }),
       createWriteStream(tmpfile, {flags: 'a', autoClose: true}),
     );
 

@@ -1,0 +1,90 @@
+{
+  "name": "gerdur",
+  "version": "1.0.0",
+  "description": "The crucial streaming module for dabox systems.",
+  "author": "Christian",
+  "license": "SEE LICENSE IN LICENSE",
+  "scripts": {
+    "lint": "eslint .",
+    "prepublishOnly": "eslint . && tsc",
+    "prebuild": "eslint .",
+    "build": "tsc",
+    "postinstall": "node setup-termux.js",
+    "dev": "ts-node src/gerdur.ts",
+    "test": "node scripts/run-ava.cjs"
+  },
+  "bin": {
+    "gerdur": "dist/src/gerdur.js"
+  },
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/**/*",
+    "setup-termux.js",
+    "CHANGELOG.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/soulwax/gerdur.git"
+  },
+  "homepage": "https://github.com/soulwax/gerdur#readme",
+  "bugs": {
+    "url": "https://github.com/soulwax/gerdur/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=12"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "chalk": "^4.1.2",
+    "commander": "^9.5.0",
+    "gerdur-core": "^1.0.0",
+    "dot-prop": "^6.0.1",
+    "egoroof-blowfish": "^4.0.2",
+    "got": "^11.8.6",
+    "gradient-string": "^2.0.2",
+    "log-update": "^4.0.0",
+    "p-queue": "^6.6.2",
+    "prompts": "^2.4.2",
+    "true-case-path": "^2.2.1",
+    "update-check": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.4.34",
+    "@types/gradient-string": "^1.1.6",
+    "@types/node": "^17.0.45",
+    "@types/prompts": "^2.4.9",
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
+    "ava": "^4.3.3",
+    "eslint": "^8.57.1",
+    "eslint-plugin-prettier": "^4.2.5",
+    "prettier": "^2.8.8",
+    "ts-node": "^10.9.2",
+    "typescript": "^4.9.5"
+  },
+  "ava": {
+    "extensions": [
+      "ts"
+    ],
+    "files": [
+      "!dist"
+    ],
+    "require": [
+      "ts-node/register"
+    ],
+    "timeout": "5m",
+    "serial": true,
+    "verbose": true
+  }
+}

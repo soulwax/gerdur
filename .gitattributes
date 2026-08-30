@@ -1,0 +1,12 @@
+# Normalize line endings to LF on checkout for all text files.
+# Prevents core.autocrlf=true (Windows) from rewriting files to CRLF,
+# which conflicts with prettier's endOfLine: 'lf' and breaks lint/build.
+* text=auto eol=lf
+
+# Binary assets — never touch line endings.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary

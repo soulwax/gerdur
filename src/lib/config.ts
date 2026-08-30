@@ -52,6 +52,7 @@ type keysType =
   | 'coverSize.128'
   | 'coverSize.320'
   | 'coverSize.flac'
+  | 'lyrics.lrcFile'
   | 'cookies.arl'
   | 'cookies.email'
   | 'cookies.password';
@@ -75,6 +76,10 @@ type configType = {
     '128': number;
     '320': number;
     flac: number;
+  };
+  lyrics: {
+    /** Write a `.lrc` sidecar next to the audio for tracks with time-synced lyrics. */
+    lrcFile: boolean;
   };
   cookies: {
     arl: string;
@@ -107,6 +112,9 @@ const defaultConfig: configType = {
     '128': 500,
     '320': 500,
     flac: 1000,
+  },
+  lyrics: {
+    lrcFile: true,
   },
   cookies: {
     arl: 'c973964816688562722418b5200c1515dffaad15a42643ebf87cc72824a54612ec51c2ad42d566743f9e424c774e98ccae7737770acff59251328e6cd598c7bcac38ca269adf78bfb88ec5bbad6cd800db3c0b88b2af645bb22b99e71de26416',
@@ -144,6 +152,9 @@ class Config {
       }
       if (userConfig.coverSize) {
         userConfig.coverSize = {...defaultConfig.coverSize, ...userConfig.coverSize};
+      }
+      if (userConfig.lyrics) {
+        userConfig.lyrics = {...defaultConfig.lyrics, ...userConfig.lyrics};
       }
       if (userConfig.cookies) {
         userConfig.cookies = {...defaultConfig.cookies, ...userConfig.cookies};

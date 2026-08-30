@@ -35,6 +35,8 @@ interface downloadTrackProps {
   isQualityFallback?: boolean;
   overwrite?: boolean;
   message?: string;
+  /** Write a `.lrc` sidecar for tracks with time-synced lyrics. Default true. */
+  lrc?: boolean;
   /**
    * A download URL already resolved for this track by a batch `resolveDownloadUrls`
    * pass. When set, the per-track `get_url` request and quality-fallback round-trips
@@ -58,6 +60,7 @@ const downloadTrack = async ({
   isQualityFallback = false,
   overwrite = false,
   message = '',
+  lrc = true,
   prefetched = null,
 }: downloadTrackProps): Promise<string | undefined> => {
   logUpdate(signale.pending(track.SNG_TITLE + ' by ' + track.ART_NAME + ' from ' + track.ALB_TITLE));
@@ -137,6 +140,7 @@ const downloadTrack = async ({
           isFallback: true,
           overwrite,
           message,
+          lrc,
         });
       } else if (fallbackQuality && quality !== 1) {
         return await downloadTrack({
@@ -152,6 +156,7 @@ const downloadTrack = async ({
           isQualityFallback: true,
           overwrite,
           message,
+          lrc,
         });
       }
       logUpdate(signale.warn(`Skipped "${track.SNG_TITLE}", track not available.`));
@@ -203,7 +208,7 @@ const downloadTrack = async ({
     }
 
     logUpdate(signale.pending('Tagging ' + track.SNG_TITLE + ' by ' + track.ART_NAME));
-    const trackWithMetadata = await addTrackTags(outFile, track, coverSize);
+    const {buffer: trackWithMetadata, model} = await addTrackTags(outFile, track, {coverSize});
 
     // Delete temporary file now
     unlinkSync(tmpfile);
@@ -217,6 +222,9 @@ const downloadTrack = async ({
       }
       // Save file to disk
       writeFileSync(savePath, trackWithMetadata);
+      if (lrc !== false && model.lyricsSynced) {
+        writeFileSync(savePath.replace(/\.(mp3|flac)$/i, '.lrc'), model.lyricsSynced);
+      }
     }
 
     // Print sucess info

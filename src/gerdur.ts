@@ -256,6 +256,7 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
       const trackNumber = conf.get('trackNumber', true) as boolean;
       const fallbackTrack = conf.get('fallbackTrack', true) as boolean;
       const fallbackQuality = conf.get('fallbackQuality', true) as boolean;
+      const lrc = conf.get('lyrics.lrcFile', true) as boolean;
       const overwrite: boolean = options.overwrite ?? conf.get('overwrite', false);
       const resolveFullPath: boolean = options.resolveFullPath ?? conf.get('playlist.resolveFullPath');
       const savedFiles: string[] = [];
@@ -305,6 +306,7 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
               fallbackQuality,
               overwrite,
               message: `(${index}/${(data as any).tracks.length})`,
+              lrc,
               prefetched: prefetchedUrls.get(track.SNG_ID) ?? null,
             });
 

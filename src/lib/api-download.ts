@@ -1,7 +1,8 @@
 import {existsSync, mkdirSync, writeFileSync} from 'fs';
 import {dirname} from 'path';
 import got from 'got';
-import {getTrackDownloadUrl, addTrackTags, GeoBlocked} from 'gerdur-core';
+import {getTrackDownloadUrl, addTrackTags, GeoBlocked, httpAgent, httpsAgent} from 'gerdur-core';
+import type {AddTrackTagsOptions} from 'gerdur-core';
 import {decryptDownload} from './decrypt';
 import {saveLayout} from './util';
 import type {trackType} from 'gerdur-core/types';
@@ -31,24 +32,21 @@ export interface GetTrackBufferOptions {
    * before giving up. Default true.
    */
   fallbackQuality?: boolean;
+  /**
+   * Extra metadata-writer options passed straight to `gerdur-core.addTrackTags`
+   * (e.g. `{embedArtistImage: false, richCredits: false}`). `coverSize` above
+   * wins over `metadata.coverSize`.
+   */
+  metadata?: AddTrackTagsOptions;
 }
 
-/**
- * Download, decrypt, and tag a single track entirely in memory.
- *
- * Returns the ready-to-write audio Buffer (MP3 or FLAC), or `null` if the track
- * is not available for download. Nothing is written to disk and nothing is
- * logged.
- *
- * @param track Track info (e.g. from `getTrackInfo` or `parseUrl`).
- * @param quality '128' | '320' | 'flac' (or numeric 1 | 3 | 9).
- */
-export const getTrackBuffer = async (
-  track: trackType,
-  quality: Quality = '320',
-  {coverSize = 500, fallbackQuality = true}: GetTrackBufferOptions = {},
-): Promise<Buffer | null> => {
-  const order: Quality[] = fallbackQuality ? [quality, '320', '128'] : [quality];
+const tagOptions = (o: GetTrackBufferOptions): AddTrackTagsOptions => ({
+  ...o.metadata,
+  coverSize: o.coverSize ?? o.metadata?.coverSize ?? 500,
+});
+
+const fetchDecryptTag = async (track: trackType, quality: Quality, options: GetTrackBufferOptions) => {
+  const order: Quality[] = options.fallbackQuality === false ? [quality] : [quality, '320', '128'];
   const tried = new Set<number>();
 
   for (const q of order) {
@@ -71,13 +69,40 @@ export const getTrackBuffer = async (
       continue;
     }
 
-    const {body} = await got(trackData.trackUrl, {responseType: 'buffer'});
+    const {body} = await got(trackData.trackUrl, {responseType: 'buffer', agent: {http: httpAgent, https: httpsAgent}});
     const decrypted = trackData.isEncrypted ? decryptDownload(body, track.SNG_ID) : body;
-    return addTrackTags(decrypted, track, coverSize);
+    return addTrackTags(decrypted, track, tagOptions(options));
   }
 
   return null;
 };
+
+/**
+ * Download, decrypt, and tag a single track entirely in memory.
+ *
+ * Returns the ready-to-write audio Buffer (MP3 or FLAC), or `null` if the track
+ * is not available for download. Nothing is written to disk and nothing is
+ * logged. Use `getTaggedTrack` if you also want the structured metadata / LRC.
+ *
+ * @param track Track info (e.g. from `getTrackInfo` or `parseUrl`).
+ * @param quality '128' | '320' | 'flac' (or numeric 1 | 3 | 9).
+ */
+export const getTrackBuffer = async (
+  track: trackType,
+  quality: Quality = '320',
+  options: GetTrackBufferOptions = {},
+): Promise<Buffer | null> => {
+  const tagged = await fetchDecryptTag(track, quality, options);
+  return tagged ? tagged.buffer : null;
+};
+
+/**
+ * Like `getTrackBuffer`, but returns `{buffer, model}` — `model` carries every
+ * field gerdur pulled from Deezer, including `model.lyricsSynced` (an LRC
+ * document) when the track has time-synced lyrics.
+ */
+export const getTaggedTrack = (track: trackType, quality: Quality = '320', options: GetTrackBufferOptions = {}) =>
+  fetchDecryptTag(track, quality, options);
 
 export interface DownloadTrackOptions extends GetTrackBufferOptions {
   /**
@@ -92,6 +117,8 @@ export interface DownloadTrackOptions extends GetTrackBufferOptions {
   trackNumber?: boolean;
   /** Re-download even if the destination file already exists. Default false. */
   overwrite?: boolean;
+  /** Write a `.lrc` sidecar next to the audio when the track has synced lyrics. Default true. */
+  lrc?: boolean;
 }
 
 export interface DownloadResult {
@@ -99,6 +126,8 @@ export interface DownloadResult {
   path: string;
   /** True if the file was written; false if skipped because it already existed. */
   written: boolean;
+  /** Path of the `.lrc` sidecar, if one was written. */
+  lrcPath?: string;
 }
 
 /**
@@ -122,8 +151,8 @@ export const downloadTrackToFile = async (
     return {path: savePath, written: false};
   }
 
-  const buffer = await getTrackBuffer(track, quality, options);
-  if (!buffer) {
+  const tagged = await getTaggedTrack(track, quality, options);
+  if (!tagged) {
     return null;
   }
 
@@ -131,6 +160,13 @@ export const downloadTrackToFile = async (
   if (dir && !existsSync(dir)) {
     mkdirSync(dir, {recursive: true});
   }
-  writeFileSync(savePath, buffer);
-  return {path: savePath, written: true};
+  writeFileSync(savePath, tagged.buffer);
+
+  let lrcPath: string | undefined;
+  if (options.lrc !== false && tagged.model.lyricsSynced) {
+    lrcPath = savePath.replace(/\.(mp3|flac)$/i, '.lrc');
+    writeFileSync(lrcPath, tagged.model.lyricsSynced);
+  }
+
+  return {path: savePath, written: true, lrcPath};
 };

@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.0.0 - 2026-08-31
+
+### Changed
+
+- **Metadata is now much richer** (`gerdur-core@^2.0.0`). Every downloaded file
+  gets ReplayGain (`REPLAYGAIN_TRACK_GAIN`), BPM, real `©`/`℗` lines, the true
+  original release date (distinct from a reissue date), full studio credits
+  (featured artists, mastering / mixing / recording engineers, producers),
+  compilation/live flags, iTunes advisory, Deezer ids, and the artist photo as a
+  second embedded image. Album/playlist tracks are hydrated with one coalesced
+  `song.getData` so the credits are complete.
+- **`.lrc` sidecar files** are written next to the audio for tracks with
+  time-synced lyrics. Toggle with `"lyrics": {"lrcFile": false}` in
+  `gerdur.config.json`.
+- Cover-art requests are capped at Deezer's real ceiling of 1800 px.
+
+### Breaking (programmatic API)
+
+- `gerdur-core.addTrackTags` changed signature/return — see its 2.0.0 changelog.
+  `getTrackBuffer` is unaffected (still resolves to `Buffer | null`); new
+  `getTaggedTrack(track, quality, options)` returns `{buffer, model}` with the
+  structured metadata and LRC. `downloadTrackToFile` now also returns `lrcPath`
+  when a sidecar was written.
+
 ## 1.0.1 - 2026-08-30
 
 ### Changed

@@ -75,7 +75,7 @@ export type {SessionOptions, DownloadTracksOptions, SearchType} from './lib/sess
 
 // ─── Download primitives ─────────────────────────────────────────────────────
 
-export {getTrackBuffer, downloadTrackToFile} from './lib/api-download';
+export {getTrackBuffer, getTaggedTrack, downloadTrackToFile} from './lib/api-download';
 export type {Quality, GetTrackBufferOptions, DownloadTrackOptions, DownloadResult} from './lib/api-download';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -101,5 +101,18 @@ export {
   getDiscography,
   getLyrics,
   getTrackDownloadUrl,
+  resolveDownloadUrls,
+  addTrackTags,
+  getRichAlbum,
+  normalizeContributors,
+  toLrc,
   GeoBlocked,
+} from 'gerdur-core';
+export type {
+  AddTrackTagsOptions,
+  TaggedTrack,
+  TrackTagModel,
+  RichAlbum,
+  ResolvedUrl,
+  NormalizedContributors,
 } from 'gerdur-core';

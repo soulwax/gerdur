@@ -900,11 +900,6 @@ eastasianwidth@^0.2.0:
   resolved "https://registry.yarnpkg.com/eastasianwidth/-/eastasianwidth-0.2.0.tgz#696ce2ec0aa0e6ea93a397ffcf24aa7840c827cb"
   integrity sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==
 
-egoroof-blowfish@^4.0.2:
-  version "4.0.3"
-  resolved "https://registry.yarnpkg.com/egoroof-blowfish/-/egoroof-blowfish-4.0.3.tgz#109a1e7adb1b6ee927295e298d2beadabd8562cb"
-  integrity sha512-aoiyyD89KSkS/WnIKp83AtYyKWWa6yF13nbTLCTZdL/DZiP2QF70pBNJxynobzh3JnYhTIAAiMgfDW+4XM4JGw==
-
 emittery@^0.11.0:
   version "0.11.0"
   resolved "https://registry.yarnpkg.com/emittery/-/emittery-0.11.0.tgz#eb5f756a200d3431de2c6e850cb2d8afd97a03b9"
@@ -1225,10 +1220,10 @@ function-bind@^1.1.2:
   resolved "https://registry.yarnpkg.com/function-bind/-/function-bind-1.1.2.tgz#2c02d864d97f3ea6c8830c464cbd11ab6eab7a1c"
   integrity sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==
 
-gerdur-core@^1.0.0:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/gerdur-core/-/gerdur-core-1.0.1.tgz#0fd49d71c9f06b1eeb82af759eeb8c8f3222af24"
-  integrity sha512-Lhh/JnLLE4w0GO0baGVHl4ZOMU0GtrxdPoRYZz0YuljglMCpbgnK1WsDSqXs8PG7csoAlO/Nluy82Wr9UE6ioA==
+gerdur-core@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/gerdur-core/-/gerdur-core-1.0.3.tgz#30fb525865f48e6735c75a8e6b2f8b9d6bbe1850"
+  integrity sha512-YaZdzQzOgWIlCD0smfgYkD7y2URpcdSBgd+xeb02Z6L3KUB7FJ+APuBfcLJfGsY/TpdcPKVGo8c1Rea3EZNFUQ==
   dependencies:
     browser-id3-writer "^4.4.0"
     delay "^5.0.0"

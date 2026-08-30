@@ -8,7 +8,7 @@ import logUpdate from 'log-update';
 import chalk from 'chalk';
 import signale from '../lib/signale';
 import {saveLayout, progressBar} from './util';
-import {decryptDownloadFile} from './decrypt-pool';
+import {decryptDownloadFile} from './decrypt';
 import type {trackType} from 'gerdur-core/types';
 
 const pipeline = promisify(stream.pipeline);

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 - 2026-08-30
+
+### Changed
+
+- Decryption now relies entirely on `gerdur-core@^1.0.3` (correct on every Node, ~290 MiB/s). Removed the `egoroof-blowfish` dependency and the OpenSSL-3 fallback dance.
+- Removed the `worker_threads` decrypt pool — with a fast native-speed decrypt it only added thread-spawn latency. `decryptDownloadFile` is now a thin sync wrapper.
+
 ## 1.0.0 - 2026-08-30
 
 Initial public release.

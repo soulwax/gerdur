@@ -85,7 +85,8 @@ const cmd = new Command()
   .option('--dur-min <seconds>', 'Search filter: minimum duration')
   .option('--dur-max <seconds>', 'Search filter: maximum duration')
   .option('--search-limit <n>', 'Max search results to fetch', '50')
-  .option('--preview', 'Download the 30-second preview clips instead of full tracks', false);
+  .option('--preview', 'Download the 30-second preview clips instead of full tracks', false)
+  .option('--enrich', 'Embed a higher-res cover from the Cover Art Archive (looked up by ISRC)', false);
 
 if ((process as any).pkg) {
   cmd.option('-U, --update', 'Update this program to latest version');
@@ -606,6 +607,7 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
                 overwrite,
                 message: `(${index}/${(data as any).tracks.length})`,
                 lrc,
+                enrich: Boolean(options.enrich),
                 prefetched: prefetchedUrls.get(track.SNG_ID) ?? null,
               });
 

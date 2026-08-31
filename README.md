@@ -143,6 +143,7 @@ All options are optional. You can suppress prompts via providing `quality` and `
 | `--dur-min` / `--dur-max` | *None*      |                                                    number (seconds)                                                    |                                                       Search filter — track duration range                                                    |
 | `--search-limit`      |     *None*      |                                                   number (default 50)                                                  |                                                       How many search results to fetch                                                        |
 | `--preview`           |     *None*      |                                                        *Nothing*                                                        |                            Download the 30-second preview clips (`.preview.mp3`) instead of full tracks — no `--quality` needed                |
+| `--enrich`            |     *None*      |                                                        *Nothing*                                                        |          Embed a higher-res front cover from the Cover Art Archive (looked up by ISRC via MusicBrainz); falls back to Deezer's cover           |
 
 ## Search
 
@@ -216,6 +217,21 @@ no `--quality`, no decryption, no tagging. Works with every source (URL, search,
 gerdur --preview -u https://deezer.com/album/302127          # 14 clips
 gerdur -d --preview --artist "Justice" --search-limit 10     # audition a search
 ```
+
+## Better cover art (`--enrich`)
+
+`--enrich` looks each track's ISRC up on MusicBrainz, finds its release-group,
+and embeds the front cover from the [Cover Art Archive](https://coverartarchive.org)
+instead of Deezer's (which is capped at 1800 px). No match, or the services are
+down? It silently keeps Deezer's cover.
+
+```bash
+gerdur --enrich -q flac -u https://deezer.com/album/302127
+```
+
+The enrichment functions (`lookupRecordingByISRC`, `getBestCoverArtUrl`, …) are
+also re-exported for programmatic use. Read-only, off by default, and
+`gerdur-core` never wires them into tagging on its own.
 
 ## Programmatic API
 

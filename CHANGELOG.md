@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.10.0 - 2026-08-31
+
+### Added
+
+- **`gerdur-core@^2.12.0`** — re-exports the optional read-only enrichment layer:
+  `lookupRecordingByISRC`, `getMusicBrainzRecording` / `getMusicBrainzRelease`,
+  `getCoverArt` / `getBestCoverArtUrl`, `configureMusicBrainz`, `PoliteJsonClient`.
+- **`--enrich`** — during a download, look the track's ISRC up on MusicBrainz and
+  embed a higher-resolution front cover from the Cover Art Archive instead of
+  Deezer's (which caps at 1800 px). Falls back silently to Deezer's cover when
+  there's no match or the services are unavailable.
+
 ## 2.9.0 - 2026-08-31
 
 ### Added

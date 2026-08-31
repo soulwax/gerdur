@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.12.0 - 2026-08-31
+
+### Changed
+
+- **Downloads no longer hold the track in memory.** The final stage was
+  temp file -> `readFileSync` -> `addTrackTags` (which allocates the file again,
+  plus another copy to strip Deezer's existing tag) -> `writeFileSync`. It is now
+  a single streamed pass — **temp file -> decrypt -> tag -> destination** — using
+  `gerdur-core@2.15.0`'s `resolveTagModel` + `createTagStream`. Peak memory per
+  concurrent download drops from ~2-3x the track size to roughly a couple of
+  2048-byte stripes plus the cover art, which matters most with `-c 8` on FLAC.
+  Output is byte-identical.
+- The intermediate `.dec` temp file is gone — decryption is now a stage in that
+  same pipeline rather than a separate pass over the whole file.
+- Tracks are written to `<name>.part` and renamed on success, so an interrupted
+  or failed run can no longer leave a half-written file where a real track
+  should be.
+
+Verified end to end against live downloads: MP3 (ID3v2.3, all frames, 324 kbps)
+and FLAC (STREAMINFO / SEEKTABLE / VORBIS_COMMENT / 2x PICTURE / PADDING, 16-bit
+44.1 kHz) both decode with zero errors under ffmpeg.
+
 ## 2.11.2 - 2026-08-31
 
 ### Changed

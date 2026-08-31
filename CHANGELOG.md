@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.9.0 - 2026-08-31
+
+### Added
+
+- **`gerdur-core@^2.11.0`** — re-exports `searchFacets` (per-type hit counts +
+  Deezer's relevance `ORDER` from a `searchMusic` result).
+- Plain-text search in the interactive prompt now shows a hint — *"also N albums
+  · M artists · P playlists (prefix with `album:` / `artist:` / `playlist:` …)"* —
+  so you know the other result types are there.
+
 ## 2.8.0 - 2026-08-31
 
 ### Added

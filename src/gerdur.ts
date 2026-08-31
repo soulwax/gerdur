@@ -9,6 +9,7 @@ import {
   getUser,
   initDeezerApi,
   searchMusic,
+  searchFacets,
   getTrackInfo,
   getTrackByISRC,
   getAlbumByUPC,
@@ -468,12 +469,21 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
         );
         url = `https://deezer.com/us/playlist/${choice.items.PLAYLIST_ID}`;
       } else {
-        const {TRACK} = await searchMusic(url, ['TRACK']);
+        const result = await searchMusic(url, ['TRACK', 'ALBUM', 'ARTIST', 'PLAYLIST']);
+        const facets = searchFacets(result);
+        if (facets.album || facets.artist || facets.playlist) {
+          console.log(
+            signale.note(
+              `also ${facets.album} albums · ${facets.artist} artists · ${facets.playlist} playlists ` +
+                `(prefix with album: / artist: / playlist: to pick those)`,
+            ),
+          );
+        }
         searchData = {
           info: {type: 'track', id: url},
           linktype: 'track',
           linkinfo: {},
-          tracks: TRACK.data.map(stampVersion),
+          tracks: result.TRACK.data.map(stampVersion),
         };
       }
     } else if (url.match(/playlist|artist/)) {

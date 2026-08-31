@@ -321,8 +321,8 @@ or `createSession`):
 - **Query** — `parseInfo`, `getUser`, `getTrackInfo`, `getAlbumInfo`,
   `getAlbumTracks`, `getPlaylistInfo`, `getPlaylistTracks`, `getArtistInfo`,
   `getDiscography`, `getLyrics`
-- **Search** — `searchMusic`, `searchPublicApi`, `searchTracks`, `searchAlbums`,
-  `searchArtists`, `searchPlaylists`, `buildAdvancedQuery`, `suggest`
+- **Search** — `searchMusic`, `searchFacets`, `searchPublicApi`, `searchTracks`,
+  `searchAlbums`, `searchArtists`, `searchPlaylists`, `buildAdvancedQuery`, `suggest`
 - **Browse** — `getGenres`, `getChart`, `getChartTracks`, `getGenreArtists`,
   `getEditorialList`, `getEditorialReleases`, `getEditorialSelection`,
   `getEditorialCharts`, `getArtistTopTracks`, `getRelatedArtists`,

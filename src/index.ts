@@ -77,7 +77,7 @@ export type {SessionOptions, DownloadTracksOptions, SearchType} from './lib/sess
 // `license_token`) for talking to Deezer directly / from multiple accounts.
 // gerdur's `Session` above is the higher-level download-orchestration one.
 export {createSession as createCoreSession, Session as CoreSession, defaultSession} from 'gerdur-core';
-export type {SessionUserData} from 'gerdur-core';
+export type {SessionUserData, SearchFacets} from 'gerdur-core';
 
 // ─── Download primitives ─────────────────────────────────────────────────────
 
@@ -97,6 +97,7 @@ export {
   initDeezerApi,
   parseInfo,
   searchMusic,
+  searchFacets,
   searchPublicApi,
   searchTracks,
   searchAlbums,

@@ -67,6 +67,8 @@ Throws if neither an `arl` nor email+password is provided, or if login fails.
 | `artistRadio(artistId)` | `Promise<publicApiList<searchResultTrack>>` | A radio (track list) seeded from an artist. |
 | `trackByISRC(isrc)` | `Promise<trackTypePublicApi>` | Resolve an ISRC → public-API track. `getTrackInfo(id)` to download. |
 | `albumByUPC(upc)` | `Promise<albumTypePublicApi>` | Resolve a UPC/EAN → public-API album (with `tracks`). |
+| `trackPreview(track)` | `Promise<TrackPreview \| null>` | `{url, duration: 30}` for a track's preview clip (gw track, id, or number). |
+| `downloadPreview(track)` | `Promise<Buffer \| null>` | The 30-second preview clip as a `Buffer` — plain MP3, no decryption. |
 | `getUser()` | `Promise<userType>` | The logged-in user profile. |
 | `getTrackBuffer(track, quality?, opts?)` | `Promise<Buffer \| null>` | Tagged audio in memory (no disk write). |
 | `downloadTrack(track, quality?, opts?)` | `Promise<DownloadResult \| null>` | Download one track to disk. |
@@ -222,7 +224,8 @@ dependency. Call after `initDeezerApi(arl)` or `createSession(...)`.
 `getEditorialList`, `getEditorialReleases`, `getEditorialSelection`,
 `getEditorialCharts`, `getArtistTopTracks`, `getRelatedArtists`,
 `getArtistAlbums`, `getArtistPlaylists`, `getArtistRadioTracks`, `getTrackByISRC`,
-`getAlbumByUPC`, `getUser`, `getTrackInfo`, `getAlbumInfo`, `getAlbumTracks`,
+`getAlbumByUPC`, `getTrackPreview`, `downloadPreview`, `formatName`, `toFormat`,
+`DEEZER_FORMATS`, `getUser`, `getTrackInfo`, `getAlbumInfo`, `getAlbumTracks`,
 `getPlaylistInfo`, `getPlaylistTracks`, `getArtistInfo`, `getDiscography`,
 `getLyrics`, `getTrackDownloadUrl`, `resolveDownloadUrls`, `GeoBlocked`.
 
@@ -263,6 +266,16 @@ const {data: tracks} = await searchTracks(q, {limit: 25, order: 'RANKING'});
 | `getArtistRadioTracks(artistId)` | a radio seeded from the artist. |
 | `getTrackByISRC(isrc)` / `getAlbumByUPC(upc)` | barcode → public-API track / album. |
 
+### Formats & previews
+
+| Function | Notes |
+| :--- | :--- |
+| `getTrackPreview(track)` | `{url, duration: 30}` for the preview clip — plain MP3, no `arl`, no decryption. `track` = gw object / id / number. |
+| `downloadPreview(track)` | the preview clip as a `Buffer`. |
+| `DEEZER_FORMATS` | every `get_url` format, best → worst (`FLAC` … `MP4_RA1`). |
+| `formatName(q)` / `toFormat(q)` | number (`1\|3\|9`) or format string → `get_url` format string. |
+| `resolveDownloadUrls(tracks, qualities)` | `qualities` may mix numbers and format strings; results carry `format` + `cipher`. |
+
 ---
 
 ## Types
@@ -276,7 +289,8 @@ Search / browse types (also re-exported): `advancedSearchFilters`, `searchOrder`
 `searchResultTrack`, `searchResultAlbum`, `searchResultArtist`,
 `searchResultPlaylist`, `suggestResult`, `publicApiList<T>`, `chartType`,
 `chartTrack` / `chartAlbum` / `chartArtist` / `chartPlaylist` / `chartPodcast`,
-`genreType`, `editorialType`, `artistAlbumResult`.
+`genreType`, `editorialType`, `artistAlbumResult`, `TrackPreview`, `DeezerFormat`,
+`MediaFormat` (core's `Quality`).
 
 Deezer entity types (`trackType`, `albumType`, `userType`, …) come from
 `gerdur-core/types`.

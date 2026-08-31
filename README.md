@@ -142,6 +142,7 @@ All options are optional. You can suppress prompts via providing `quality` and `
 | `--bpm-min` / `--bpm-max` | *None*      |                                                        number                                                          |                                                    Search filter — tempo range (beats per minute)                                            |
 | `--dur-min` / `--dur-max` | *None*      |                                                    number (seconds)                                                    |                                                       Search filter — track duration range                                                    |
 | `--search-limit`      |     *None*      |                                                   number (default 50)                                                  |                                                       How many search results to fetch                                                        |
+| `--preview`           |     *None*      |                                                        *Nothing*                                                        |                            Download the 30-second preview clips (`.preview.mp3`) instead of full tracks — no `--quality` needed                |
 
 ## Search
 
@@ -198,6 +199,18 @@ only on **track** search:
 | `dur_min:` / `dur_max:` | `dur_min:200` (seconds) |
 | `bpm_min:` / `bpm_max:` | `bpm_min:120` |
 
+## Previews
+
+`--preview` writes the 30-second clip for each track as `<name>.preview.mp3`
+instead of downloading the full file. The clips are plain, licence-free MP3s —
+no `--quality`, no decryption, no tagging. Works with every source (URL, search,
+`isrc:` / `upc:`) and in `--headless` mode.
+
+```bash
+gerdur --preview -u https://deezer.com/album/302127          # 14 clips
+gerdur -d --preview --artist "Justice" --search-limit 10     # audition a search
+```
+
 ## Programmatic API
 
 When installed as a dependency, `gerdur` exposes a side-effect-free API
@@ -246,7 +259,7 @@ Session methods:
   `artistTopTracks`, `relatedArtists`, `artistAlbums`, `artistRadio`,
   `trackByISRC`, `albumByUPC`
 - **user / download** — `getUser`, `getTrackBuffer`, `downloadTrack`,
-  `downloadTracks`, `downloadUrl`
+  `downloadTracks`, `downloadUrl`, `trackPreview`, `downloadPreview`
 
 Every download call is silent; `downloadTracks` / `downloadUrl` accept
 `concurrency` and an `onProgress` callback and return one `{path, written} | null`
@@ -302,7 +315,8 @@ or `createSession`):
   `getEditorialCharts`, `getArtistTopTracks`, `getRelatedArtists`,
   `getArtistAlbums`, `getArtistPlaylists`, `getArtistRadioTracks`,
   `getTrackByISRC`, `getAlbumByUPC`
-- **Download** — `getTrackDownloadUrl`, `resolveDownloadUrls`, `GeoBlocked`
+- **Download** — `getTrackDownloadUrl`, `resolveDownloadUrls`, `getTrackPreview`,
+  `downloadPreview`, `formatName`, `toFormat`, `DEEZER_FORMATS`, `GeoBlocked`
 
 ### Auth & config helpers
 

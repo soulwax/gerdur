@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.4.0 - 2026-08-31
+
+### Added
+
+- **`gerdur-core@^2.3.0`** — re-exports `getTrackPreview`, `downloadPreview`,
+  `formatName`, `toFormat`, `DEEZER_FORMATS` and the `DeezerFormat` /
+  `TrackPreview` types.
+- **`--preview`** — download the 30-second clip for each track as
+  `<name>.preview.mp3` instead of the full file. Plain licence-free MP3s: no
+  `--quality`, no decryption, no tagging. Works with every source and headless.
+- **`Session.trackPreview(track)`** and **`Session.downloadPreview(track)`**.
+
 ## 2.3.0 - 2026-08-31
 
 ### Added

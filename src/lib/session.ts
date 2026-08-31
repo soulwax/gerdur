@@ -15,6 +15,8 @@ import {
   getArtistRadioTracks,
   getTrackByISRC,
   getAlbumByUPC,
+  getTrackPreview,
+  downloadPreview as fetchPreview,
 } from 'gerdur-core';
 import {loginWithEmail} from './email-login';
 import {getTrackBuffer, downloadTrackToFile} from './api-download';
@@ -37,6 +39,7 @@ import type {
   trackTypePublicApi,
   albumTypePublicApi,
 } from 'gerdur-core/types';
+import type {TrackPreview} from 'gerdur-core';
 
 /** Search result categories accepted by {@link Session.search}. */
 export type SearchType =
@@ -201,6 +204,16 @@ export class Session {
   /** Resolve a UPC/EAN barcode to the public-API album (with its `tracks`). */
   albumByUPC(upc: string): Promise<albumTypePublicApi> {
     return getAlbumByUPC(upc);
+  }
+
+  /** The 30-second preview clip URL for a track (plain MP3 — no licence, no decryption). */
+  trackPreview(track: trackType | string | number): Promise<TrackPreview | null> {
+    return getTrackPreview(track);
+  }
+
+  /** Fetch a track's 30-second preview clip as a `Buffer` (plain MP3). */
+  downloadPreview(track: trackType | string | number): Promise<Buffer | null> {
+    return fetchPreview(track);
   }
 
   /** Return a fully tagged audio Buffer for a track (nothing written to disk). */

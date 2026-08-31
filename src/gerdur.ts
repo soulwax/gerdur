@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import {EOL} from 'os';
-import {readFileSync, writeFileSync} from 'fs';
+import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'fs';
 import {dirname, join, resolve, sep} from 'path';
 import {Command} from 'commander';
 import gradient from 'gradient-string';
@@ -11,6 +11,7 @@ import {
   getTrackInfo,
   getTrackByISRC,
   getAlbumByUPC,
+  downloadPreview,
   parseInfo,
   getDiscography,
   resolveDownloadUrls,
@@ -26,7 +27,7 @@ import Config from './lib/config';
 import updateCheck from './lib/update-check';
 import autoUpdater from './lib/auto-updater';
 import {ensureArl, recoverFromLoginFailure, runSetup} from './lib/arl-setup';
-import {commonPath, formatSecondsReadable, sanitizeFilename} from './lib/util';
+import {commonPath, formatSecondsReadable, sanitizeFilename, saveLayout as renderSaveLayout} from './lib/util';
 import {advancedFiltersFromFlags, searchAdvancedTracks} from './lib/search';
 import pkg from '../package.json';
 import type {
@@ -75,7 +76,8 @@ const cmd = new Command()
   .option('--bpm-max <n>', 'Search filter: maximum BPM')
   .option('--dur-min <seconds>', 'Search filter: minimum duration')
   .option('--dur-max <seconds>', 'Search filter: maximum duration')
-  .option('--search-limit <n>', 'Max search results to fetch', '50');
+  .option('--search-limit <n>', 'Max search results to fetch', '50')
+  .option('--preview', 'Download the 30-second preview clips instead of full tracks', false);
 
 if ((process as any).pkg) {
   cmd.option('-U, --update', 'Update this program to latest version');
@@ -102,7 +104,7 @@ const toFiniteNumber = (value: unknown): number | undefined => {
 const advancedFilters = advancedFiltersFromFlags(options);
 let advancedFiltersConsumed = false;
 
-if (options.headless && !options.quality) {
+if (options.headless && !options.quality && !options.preview) {
   console.error(signale.error('Missing parameters --quality'));
   console.error(signale.note('Quality must be provided with headless mode'));
   process.exit(1);
@@ -198,10 +200,58 @@ const resolveAdvancedSearch = async (filters: advancedSearchFilters): Promise<Se
   return {info: {type: 'track', id: query}, linktype: 'track', linkinfo: {}, tracks};
 };
 
+/**
+ * `--preview`: fetch the 30-second clip for each selected track and write it as
+ * `<saveLayout path>.preview.mp3`. Bypasses the get_url / decrypt / tag pipeline
+ * entirely — previews are plain, licence-free MP3s.
+ */
+const downloadPreviews = async (
+  tracks: trackType[],
+  info: any,
+  template: string,
+  totalTracks: number,
+  trackNumber: boolean,
+  overwrite: boolean,
+): Promise<string[]> => {
+  const saved: string[] = [];
+  await queue.addAll(
+    tracks.map((track, index) => async () => {
+      const rel =
+        renderSaveLayout({
+          track,
+          album: info,
+          path: template,
+          trackNumber,
+          minimumIntegerDigits: totalTracks >= 100 ? 3 : 2,
+        }) + '.preview.mp3';
+      logUpdate(signale.pending(`(${index + 1}/${tracks.length}) ${track.ART_NAME} - ${track.SNG_TITLE}`));
+      if (!overwrite && existsSync(rel)) {
+        saved.push(rel);
+        return;
+      }
+      try {
+        const clip = await downloadPreview(track);
+        if (!clip) {
+          logUpdate(signale.warn(`No preview for ${track.SNG_TITLE}`));
+          return;
+        }
+        mkdirSync(dirname(rel), {recursive: true});
+        writeFileSync(rel, clip);
+        saved.push(rel);
+        logUpdate(signale.success(`${track.ART_NAME} - ${track.SNG_TITLE} (preview)`));
+      } catch (err: any) {
+        logUpdate(signale.error(`${track.SNG_TITLE}: ${err.message}`));
+      }
+    }),
+  );
+  logUpdate.done();
+  return saved;
+};
+
 const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) => {
   try {
     url = url ?? '';
-    if (!options.quality) {
+    if (!options.quality && !options.preview) {
       const {musicQuality} = await prompts(
         [
           {
@@ -406,62 +456,76 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
       const savedFiles: string[] = [];
       let m3u8: string[] = [];
 
-      // One batched get_url for the whole selection instead of a request per track.
-      // Deezer returns the best licensed format, so pass an ordered preference list.
-      const QUALITY_PREF: {[k: string]: number[]} = {
-        '1': [1],
-        '128': [1],
-        '3': [3, 1],
-        '320': [3, 1],
-        '9': [9, 3, 1],
-        flac: [9, 3, 1],
-      };
-      const prefetchedUrls = new Map<
-        string,
-        {trackUrl: string; isEncrypted: boolean; fileSize: number; format: string}
-      >();
-      if (data.tracks.length > 1 && !process.env.SIMULATE) {
-        try {
-          const base = QUALITY_PREF[String(options.quality).toLowerCase()] ?? [3, 1];
-          const pref = fallbackQuality ? base : [base[0]];
-          const resolved = await resolveDownloadUrls(data.tracks, pref);
-          resolved.forEach((r, i) => {
-            if (r) {
-              prefetchedUrls.set(data.tracks[i].SNG_ID, r);
-            }
-          });
-        } catch {
-          // batch resolve failed wholesale — every track falls back to per-track resolution
-        }
-      }
+      const layoutTemplate = options.output ? options.output : saveLayout[(data as any).linktype];
 
-      await queue.addAll(
-        data.tracks.map((track, index) => {
-          return async () => {
-            const savedPath = await downloadTrack({
-              track,
-              quality: options.quality,
-              info: (data as any).linkinfo,
-              coverSizes,
-              path: options.output ? options.output : saveLayout[(data as any).linktype],
-              totalTracks: data ? data.tracks.length : 10,
-              trackNumber,
-              fallbackTrack,
-              fallbackQuality,
-              overwrite,
-              message: `(${index}/${(data as any).tracks.length})`,
-              lrc,
-              prefetched: prefetchedUrls.get(track.SNG_ID) ?? null,
+      if (options.preview) {
+        const clips = await downloadPreviews(
+          data.tracks,
+          (data as any).linkinfo,
+          layoutTemplate,
+          data.tracks.length,
+          trackNumber,
+          overwrite,
+        );
+        savedFiles.push(...clips);
+      } else {
+        // One batched get_url for the whole selection instead of a request per track.
+        // Deezer returns the best licensed format, so pass an ordered preference list.
+        const QUALITY_PREF: {[k: string]: number[]} = {
+          '1': [1],
+          '128': [1],
+          '3': [3, 1],
+          '320': [3, 1],
+          '9': [9, 3, 1],
+          flac: [9, 3, 1],
+        };
+        const prefetchedUrls = new Map<
+          string,
+          {trackUrl: string; isEncrypted: boolean; fileSize: number; format: string}
+        >();
+        if (data.tracks.length > 1 && !process.env.SIMULATE) {
+          try {
+            const base = QUALITY_PREF[String(options.quality).toLowerCase()] ?? [3, 1];
+            const pref = fallbackQuality ? base : [base[0]];
+            const resolved = await resolveDownloadUrls(data.tracks, pref);
+            resolved.forEach((r, i) => {
+              if (r) {
+                prefetchedUrls.set(data.tracks[i].SNG_ID, r);
+              }
             });
+          } catch {
+            // batch resolve failed wholesale — every track falls back to per-track resolution
+          }
+        }
 
-            // Add to saved list
-            if (savedPath) {
-              m3u8.push(resolve(process.env.SIMULATE ? savedPath : trueCasePathSync(savedPath)));
-              savedFiles.push(savedPath);
-            }
-          };
-        }),
-      );
+        await queue.addAll(
+          data.tracks.map((track, index) => {
+            return async () => {
+              const savedPath = await downloadTrack({
+                track,
+                quality: options.quality,
+                info: (data as any).linkinfo,
+                coverSizes,
+                path: layoutTemplate,
+                totalTracks: data ? data.tracks.length : 10,
+                trackNumber,
+                fallbackTrack,
+                fallbackQuality,
+                overwrite,
+                message: `(${index}/${(data as any).tracks.length})`,
+                lrc,
+                prefetched: prefetchedUrls.get(track.SNG_ID) ?? null,
+              });
+
+              // Add to saved list
+              if (savedPath) {
+                m3u8.push(resolve(process.env.SIMULATE ? savedPath : trueCasePathSync(savedPath)));
+                savedFiles.push(savedPath);
+              }
+            };
+          }),
+        );
+      }
 
       // Display downloaded location
       if (savedFiles.length > 0) {

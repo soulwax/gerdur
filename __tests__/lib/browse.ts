@@ -18,9 +18,14 @@ test('the library re-exports the browse surface', (t) => {
     'getArtistRadioTracks',
     'getTrackByISRC',
     'getAlbumByUPC',
+    'getTrackPreview',
+    'downloadPreview',
+    'formatName',
+    'toFormat',
   ] as const) {
     t.is(typeof (gerdur as Record<string, unknown>)[name], 'function', `${name} is re-exported`);
   }
+  t.true(Array.isArray((gerdur as Record<string, unknown>).DEEZER_FORMATS));
 });
 
 test('Session exposes the browse methods', (t) => {
@@ -36,6 +41,8 @@ test('Session exposes the browse methods', (t) => {
     'artistRadio',
     'trackByISRC',
     'albumByUPC',
+    'trackPreview',
+    'downloadPreview',
   ] as const) {
     t.is(typeof proto[name], 'function', `Session.${name}`);
   }

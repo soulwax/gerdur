@@ -27,6 +27,10 @@ async function main() {
 
   const album = await session.albumByUPC('0724384960650');
   console.log(`UPC 0724384960650 -> ${album.artist.name} — ${album.title} (${album.nb_tracks} tracks)`);
+
+  // 30-second preview clip — no licence, no decryption
+  const preview = await session.trackPreview('3135556');
+  console.log(`\nPreview: ${preview.url} (${preview.duration}s)`);
 }
 
 main().catch((err) => {

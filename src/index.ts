@@ -113,6 +113,11 @@ export {
   getArtistRadioTracks,
   getTrackByISRC,
   getAlbumByUPC,
+  getTrackPreview,
+  downloadPreview,
+  formatName,
+  toFormat,
+  DEEZER_FORMATS,
   getUser,
   getTrackInfo,
   getAlbumInfo,
@@ -161,3 +166,4 @@ export type {
   editorialType,
   artistAlbumResult,
 } from 'gerdur-core/types';
+export type {Quality as MediaFormat, DeezerFormat, TrackPreview} from 'gerdur-core';

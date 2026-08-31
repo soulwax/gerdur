@@ -91,6 +91,13 @@ export {
   initDeezerApi,
   parseInfo,
   searchMusic,
+  searchPublicApi,
+  searchTracks,
+  searchAlbums,
+  searchArtists,
+  searchPlaylists,
+  buildAdvancedQuery,
+  suggest,
   getUser,
   getTrackInfo,
   getAlbumInfo,
@@ -116,3 +123,16 @@ export type {
   ResolvedUrl,
   NormalizedContributors,
 } from 'gerdur-core';
+// Search types live in the shared type package (also re-exported by `gerdur-core/types`).
+export type {
+  advancedSearchFilters,
+  searchOrder,
+  searchEntity,
+  publicApiSearchOptions,
+  publicApiSearchResponse,
+  searchResultTrack,
+  searchResultAlbum,
+  searchResultArtist,
+  searchResultPlaylist,
+  suggestResult,
+} from 'gerdur-core/types';

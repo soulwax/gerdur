@@ -1,9 +1,17 @@
 import PQueue from 'p-queue';
-import {initDeezerApi, getUser, parseInfo, searchMusic} from 'gerdur-core';
+import {initDeezerApi, getUser, parseInfo, searchMusic, searchTracks, buildAdvancedQuery, suggest} from 'gerdur-core';
 import {loginWithEmail} from './email-login';
 import {getTrackBuffer, downloadTrackToFile} from './api-download';
 import type {Quality, DownloadTrackOptions, DownloadResult} from './api-download';
-import type {trackType, userType} from 'gerdur-core/types';
+import type {
+  trackType,
+  userType,
+  advancedSearchFilters,
+  publicApiSearchOptions,
+  publicApiSearchResponse,
+  searchResultTrack,
+  suggestResult,
+} from 'gerdur-core/types';
 
 /** Search result categories accepted by {@link Session.search}. */
 export type SearchType =
@@ -94,6 +102,26 @@ export class Session {
   /** Search Deezer. Defaults to track results. */
   search(query: string, types: SearchType[] = ['TRACK'], limit?: number): ReturnType<typeof searchMusic> {
     return searchMusic(query, types as any, limit);
+  }
+
+  /**
+   * Search the public REST API with structured filters (`{artist, album, track,
+   * label, durMin, durMax, bpmMin, bpmMax}`) plus a free-text `query`. Returns
+   * public-API track objects (with `isrc`, `preview`); to download a result,
+   * fetch its gw track first with the re-exported `getTrackInfo(id)`.
+   *
+   * Deezer applies the operators loosely — see `buildAdvancedQuery`.
+   */
+  searchAdvanced(
+    filters: advancedSearchFilters,
+    options: Omit<publicApiSearchOptions, 'type'> = {},
+  ): Promise<publicApiSearchResponse<searchResultTrack>> {
+    return searchTracks(buildAdvancedQuery(filters), options);
+  }
+
+  /** `deezer.suggest` autocomplete — for "as you type" UIs. `nb` caps items per type. */
+  suggest(query: string, nb?: number): Promise<suggestResult> {
+    return suggest(query, nb);
   }
 
   /** Return a fully tagged audio Buffer for a track (nothing written to disk). */

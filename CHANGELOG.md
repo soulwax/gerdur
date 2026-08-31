@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.1.0 - 2026-08-31
+
+### Added
+
+- **`gerdur-core@^2.1.0`** — the new search surface is re-exported from the
+  library: `searchPublicApi`, `searchTracks` / `searchAlbums` / `searchArtists` /
+  `searchPlaylists`, `buildAdvancedQuery`, `suggest`, plus the matching types.
+- **`Session.searchAdvanced(filters, options?)`** — structured search against the
+  public REST API — a free-text query plus `{artist, album, track, label, durMin,
+  durMax, bpmMin, bpmMax}`, with `order` / `limit` / `index`. Returns public-API
+  track objects with `isrc` / `preview`; fetch a hit's gw track with
+  `getTrackInfo(id)` to download.
+- **`Session.suggest(query, nb?)`** — `deezer.suggest` autocomplete.
+
+_No CLI changes in this release — the interactive `gerdur` flow is unchanged._
+
 ## 2.0.0 - 2026-08-31
 
 ### Changed

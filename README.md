@@ -175,12 +175,22 @@ await session.downloadUrl('https://deezer.com/album/302127', 'flac', {
 const {tracks} = await session.parseUrl('https://deezer.com/track/3135556');
 const found = await session.search('daft punk', ['TRACK'], 10);
 const results = await session.downloadTracks(tracks, '320', {output: '{ART_NAME} - {SNG_TITLE}'});
+
+// Structured search against the public REST API (isrc / preview / bpm-aware):
+const hits = await session.searchAdvanced(
+  {query: 'one more time', artist: 'daft punk', durMin: 200},
+  {limit: 25, order: 'RANKING'},
+);
+const suggestions = await session.suggest('daft'); // autocomplete
 ```
 
-Session methods: `parseUrl`, `search`, `getUser`, `getTrackBuffer`, `downloadTrack`,
-`downloadTracks`, `downloadUrl`. Every download call is silent; `downloadTracks` /
-`downloadUrl` accept `concurrency` and an `onProgress` callback and return one
-`{path, written} | null` per track.
+Session methods: `parseUrl`, `search`, `searchAdvanced`, `suggest`, `getUser`,
+`getTrackBuffer`, `downloadTrack`, `downloadTracks`, `downloadUrl`. Every download
+call is silent; `downloadTracks` / `downloadUrl` accept `concurrency` and an
+`onProgress` callback and return one `{path, written} | null` per track.
+
+`searchAdvanced` returns public-API track objects; fetch a hit's gw track with
+`getTrackInfo(id)` before downloading it.
 
 ### Low-level: primitives
 
@@ -204,9 +214,11 @@ const {path, written} = (await downloadTrackToFile(track, 'flac', {output: '{ART
 So you don't need `gerdur-core` as a second dependency (call after `initDeezerApi`
 or `createSession`):
 
-`parseInfo`, `searchMusic`, `getUser`, `getTrackInfo`, `getAlbumInfo`, `getAlbumTracks`,
-`getPlaylistInfo`, `getPlaylistTracks`, `getArtistInfo`, `getDiscography`, `getLyrics`,
-`getTrackDownloadUrl`, `GeoBlocked`.
+`parseInfo`, `searchMusic`, `searchPublicApi`, `searchTracks`, `searchAlbums`,
+`searchArtists`, `searchPlaylists`, `buildAdvancedQuery`, `suggest`, `getUser`,
+`getTrackInfo`, `getAlbumInfo`, `getAlbumTracks`, `getPlaylistInfo`,
+`getPlaylistTracks`, `getArtistInfo`, `getDiscography`, `getLyrics`,
+`getTrackDownloadUrl`, `resolveDownloadUrls`, `GeoBlocked`.
 
 ### Auth & config helpers
 

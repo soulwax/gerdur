@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.11.1 - 2026-08-31
+
+### Docs
+
+- **README rewritten** for npm — a task-oriented CLI guide (common tasks, the
+  full options table, every source prefix, search, previews, `--enrich`, output
+  templates, config file, headless use) followed by the programmatic API
+  (sessions, primitives, re-exported query functions, auth/config helpers,
+  multi-account). Added a table of contents, shields badges, a single-line
+  description; dropped the internal-project references and the stale team footer.
+- `package.json` `description` rewritten and `keywords` added for npm search.
+
+No code changes.
+
 ## 2.11.0 - 2026-08-31
 
 ### Fixed

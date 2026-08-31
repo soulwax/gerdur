@@ -39,6 +39,9 @@ test('the library re-exports the browse surface', (t) => {
     'getShowEpisodes',
     'refreshTrackTokens',
     'searchFacets',
+    'lookupRecordingByISRC',
+    'getBestCoverArtUrl',
+    'configureMusicBrainz',
   ] as const) {
     t.is(typeof (gerdur as Record<string, unknown>)[name], 'function', `${name} is re-exported`);
   }

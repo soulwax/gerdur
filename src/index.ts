@@ -79,6 +79,19 @@ export type {SessionOptions, DownloadTracksOptions, SearchType} from './lib/sess
 export {createSession as createCoreSession, Session as CoreSession, defaultSession} from 'gerdur-core';
 export type {SessionUserData, SearchFacets} from 'gerdur-core';
 
+// Optional, read-only enrichment against open databases (MusicBrainz, Cover Art
+// Archive). Off by default; `--enrich` on the CLI uses it for hi-res covers.
+export {
+  configureMusicBrainz,
+  lookupRecordingByISRC,
+  getMusicBrainzRecording,
+  getMusicBrainzRelease,
+  getCoverArt,
+  getBestCoverArtUrl,
+  PoliteJsonClient,
+} from 'gerdur-core';
+export type {MBRecording, MBRelease, MBArtistCredit, CoverArt, CoverArtImage} from 'gerdur-core';
+
 // ─── Download primitives ─────────────────────────────────────────────────────
 
 export {getTrackBuffer, getTaggedTrack, downloadTrackToFile} from './lib/api-download';

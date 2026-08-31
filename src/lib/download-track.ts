@@ -3,7 +3,16 @@ import stream from 'stream';
 import {existsSync, mkdirSync, writeFileSync, createWriteStream, readFileSync, statSync, unlinkSync} from 'fs';
 import {promisify} from 'util';
 import {dirname} from 'path';
-import {GeoBlocked, getTrackDownloadUrl, addTrackTags, httpAgent, httpsAgent} from 'gerdur-core';
+import {
+  GeoBlocked,
+  getTrackDownloadUrl,
+  addTrackTags,
+  httpAgent,
+  httpsAgent,
+  getBuffer,
+  lookupRecordingByISRC,
+  getBestCoverArtUrl,
+} from 'gerdur-core';
 import logUpdate from 'log-update';
 import chalk from 'chalk';
 import signale from '../lib/signale';
@@ -38,6 +47,12 @@ interface downloadTrackProps {
   /** Write a `.lrc` sidecar for tracks with time-synced lyrics. Default true. */
   lrc?: boolean;
   /**
+   * Replace Deezer's cover art with a higher-resolution one from the Cover Art
+   * Archive (looked up via the track's ISRC on MusicBrainz). Falls back silently
+   * to Deezer's cover if there's no match. Off by default.
+   */
+  enrich?: boolean;
+  /**
    * A download URL already resolved for this track by a batch `resolveDownloadUrls`
    * pass. When set, the per-track `get_url` request and quality-fallback round-trips
    * are skipped and `quality` is taken from the format Deezer actually granted.
@@ -61,6 +76,7 @@ const downloadTrack = async ({
   overwrite = false,
   message = '',
   lrc = true,
+  enrich = false,
   prefetched = null,
 }: downloadTrackProps): Promise<string | undefined> => {
   logUpdate(signale.pending(track.SNG_TITLE + ' by ' + track.ART_NAME + ' from ' + track.ALB_TITLE));
@@ -210,8 +226,26 @@ const downloadTrack = async ({
       outFile = readFileSync(tmpfile);
     }
 
+    let enrichedCover: Buffer | undefined;
+    if (enrich && track.ISRC && !simulate) {
+      try {
+        const rec = await lookupRecordingByISRC(track.ISRC);
+        const rgid = rec?.releases.find((r) => r.releaseGroupMbid)?.releaseGroupMbid;
+        const coverUrl = rgid ? await getBestCoverArtUrl(rgid, {minSize: 1200}) : null;
+        if (coverUrl) {
+          enrichedCover = await getBuffer(coverUrl);
+          logUpdate(signale.note(`Using a higher-res cover from the Cover Art Archive for ${track.SNG_TITLE}`));
+        }
+      } catch {
+        // MusicBrainz / CAA unavailable or no match — keep Deezer's cover
+      }
+    }
+
     logUpdate(signale.pending('Tagging ' + track.SNG_TITLE + ' by ' + track.ART_NAME));
-    const {buffer: trackWithMetadata, model} = await addTrackTags(outFile, track, {coverSize});
+    const {buffer: trackWithMetadata, model} = await addTrackTags(outFile, track, {
+      coverSize,
+      ...(enrichedCover ? {cover: enrichedCover} : {}),
+    });
 
     // Delete temporary file now
     unlinkSync(tmpfile);

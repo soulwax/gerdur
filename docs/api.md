@@ -71,6 +71,7 @@ Throws if neither an `arl` nor email+password is provided, or if login fails.
 | `downloadPreview(track)` | `Promise<Buffer \| null>` | The 30-second preview clip as a `Buffer` — plain MP3, no decryption. |
 | `getUser()` | `Promise<userType>` | The logged-in user profile. |
 | `getTrackBuffer(track, quality?, opts?)` | `Promise<Buffer \| null>` | Tagged audio in memory (no disk write). |
+| `streamTrack(track, quality?, opts?)` | `Promise<TrackStream>` | Download as a constant-memory stream of decrypted audio — `{stream, size, startedAt}`; `opts.onProgress` / `opts.resumeFrom`. |
 | `downloadTrack(track, quality?, opts?)` | `Promise<DownloadResult \| null>` | Download one track to disk. |
 | `downloadTracks(tracks, quality?, opts?)` | `Promise<(DownloadResult \| null)[]>` | Queued multi-track download. |
 | `downloadUrl(url, quality?, opts?)` | `Promise<(DownloadResult \| null)[]>` | `parseUrl` + `downloadTracks` in one call. |
@@ -227,7 +228,8 @@ dependency. Call after `initDeezerApi(arl)` or `createSession(...)`.
 `getAlbumByUPC`, `getTrackPreview`, `downloadPreview`, `formatName`, `toFormat`,
 `DEEZER_FORMATS`, `getUser`, `getTrackInfo`, `getAlbumInfo`, `getAlbumTracks`,
 `getPlaylistInfo`, `getPlaylistTracks`, `getArtistInfo`, `getDiscography`,
-`getLyrics`, `getTrackDownloadUrl`, `resolveDownloadUrls`, `GeoBlocked`.
+`getLyrics`, `getTrackDownloadUrl`, `resolveDownloadUrls`, `streamTrackDownload`,
+`createDecryptStream`, `getStream`, `GeoBlocked`, `DeezerError`.
 
 ```ts
 await initDeezerApi(arl);
@@ -290,7 +292,8 @@ Search / browse types (also re-exported): `advancedSearchFilters`, `searchOrder`
 `searchResultPlaylist`, `suggestResult`, `publicApiList<T>`, `chartType`,
 `chartTrack` / `chartAlbum` / `chartArtist` / `chartPlaylist` / `chartPodcast`,
 `genreType`, `editorialType`, `artistAlbumResult`, `TrackPreview`, `DeezerFormat`,
-`MediaFormat` (core's `Quality`).
+`MediaFormat` (core's `Quality`), `StreamTrackOptions`, `TrackStream`,
+`StreamResponse`, `DeezerErrorPayload`.
 
 Deezer entity types (`trackType`, `albumType`, `userType`, …) come from
 `gerdur-core/types`.

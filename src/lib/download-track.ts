@@ -8,7 +8,7 @@ import logUpdate from 'log-update';
 import chalk from 'chalk';
 import signale from '../lib/signale';
 import {saveLayout, progressBar} from './util';
-import {decryptDownloadFile} from './decrypt';
+import {decryptFileToFile} from './decrypt';
 import type {trackType} from 'gerdur-core/types';
 
 const pipeline = promisify(stream.pipeline);
@@ -202,7 +202,10 @@ const downloadTrack = async ({
     let outFile;
     if (trackData.isEncrypted) {
       logUpdate(signale.pending('Decrypting ' + track.SNG_TITLE + ' by ' + track.ART_NAME));
-      outFile = await decryptDownloadFile(tmpfile, track.SNG_ID);
+      const decfile = tmpfile + '.dec';
+      await decryptFileToFile(tmpfile, decfile, track.SNG_ID); // streamed — ~one stripe in memory
+      outFile = readFileSync(decfile);
+      unlinkSync(decfile);
     } else {
       outFile = readFileSync(tmpfile);
     }

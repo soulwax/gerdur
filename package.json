@@ -1,6 +1,6 @@
 {
   "name": "gerdur",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "The crucial streaming module for dabox systems.",
   "author": "Christian",
   "license": "SEE LICENSE IN LICENSE",
@@ -48,7 +48,7 @@
     "adm-zip": "^0.5.16",
     "chalk": "^4.1.2",
     "commander": "^9.5.0",
-    "gerdur-core": "^2.3.0",
+    "gerdur-core": "^2.5.0",
     "dot-prop": "^6.0.1",
     "got": "^11.8.6",
     "gradient-string": "^2.0.2",

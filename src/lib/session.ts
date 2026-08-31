@@ -17,6 +17,7 @@ import {
   getAlbumByUPC,
   getTrackPreview,
   downloadPreview as fetchPreview,
+  streamTrackDownload,
 } from 'gerdur-core';
 import {loginWithEmail} from './email-login';
 import {getTrackBuffer, downloadTrackToFile} from './api-download';
@@ -39,7 +40,7 @@ import type {
   trackTypePublicApi,
   albumTypePublicApi,
 } from 'gerdur-core/types';
-import type {TrackPreview} from 'gerdur-core';
+import type {TrackPreview, StreamTrackOptions, TrackStream} from 'gerdur-core';
 
 /** Search result categories accepted by {@link Session.search}. */
 export type SearchType =
@@ -219,6 +220,16 @@ export class Session {
   /** Return a fully tagged audio Buffer for a track (nothing written to disk). */
   getTrackBuffer(track: trackType, quality: Quality = '320', options = {}): Promise<Buffer | null> {
     return getTrackBuffer(track, quality, options);
+  }
+
+  /**
+   * Download a track as a **stream** of decrypted audio — constant memory,
+   * regardless of file size or concurrency. `{stream, size, startedAt,
+   * isEncrypted}`; pipe `stream` to a file or your own tag muxer.
+   * `options.onProgress(received, total)`, `options.resumeFrom` (bytes).
+   */
+  streamTrack(track: trackType, quality: 1 | 3 | 9 = 3, options: StreamTrackOptions = {}): Promise<TrackStream> {
+    return streamTrackDownload(track, quality, options);
   }
 
   /** Download a single track to disk. */

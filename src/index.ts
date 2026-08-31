@@ -129,11 +129,15 @@ export {
   getLyrics,
   getTrackDownloadUrl,
   resolveDownloadUrls,
+  streamTrackDownload,
+  createDecryptStream,
+  getStream,
   addTrackTags,
   getRichAlbum,
   normalizeContributors,
   toLrc,
   GeoBlocked,
+  DeezerError,
 } from 'gerdur-core';
 export type {
   AddTrackTagsOptions,
@@ -166,4 +170,12 @@ export type {
   editorialType,
   artistAlbumResult,
 } from 'gerdur-core/types';
-export type {Quality as MediaFormat, DeezerFormat, TrackPreview} from 'gerdur-core';
+export type {
+  Quality as MediaFormat,
+  DeezerFormat,
+  TrackPreview,
+  StreamTrackOptions,
+  TrackStream,
+  StreamResponse,
+  DeezerErrorPayload,
+} from 'gerdur-core';

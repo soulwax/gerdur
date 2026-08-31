@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.5.0 - 2026-08-31
+
+### Changed
+
+- **`gerdur-core@^2.5.0`.** Track decryption in the download pipeline is now
+  **streamed** to a temp file (`decryptFileToFile`) instead of read fully into
+  memory twice — peak memory during decrypt drops to ~one 2048-byte stripe.
+- Gateway failures now surface as `DeezerError` (re-exported) with `code` /
+  `keys` / `retryable`, and gateway retries are bounded (no more infinite spin
+  on a persistently failing endpoint).
+
+### Added
+
+- Re-exports: `streamTrackDownload`, `createDecryptStream`, `getStream`,
+  `DeezerError` + the `StreamTrackOptions` / `TrackStream` / `StreamResponse` types.
+- **`Session.streamTrack(track, quality?, options?)`** — download a track as a
+  constant-memory stream of decrypted audio (`{stream, size, startedAt}`),
+  with `onProgress` and `resumeFrom`.
+
 ## 2.4.0 - 2026-08-31
 
 ### Added

@@ -258,12 +258,16 @@ Session methods:
 - **browse** — `genres`, `chart`, `chartTracks`, `editorialSections`,
   `artistTopTracks`, `relatedArtists`, `artistAlbums`, `artistRadio`,
   `trackByISRC`, `albumByUPC`
-- **user / download** — `getUser`, `getTrackBuffer`, `downloadTrack`,
-  `downloadTracks`, `downloadUrl`, `trackPreview`, `downloadPreview`
+- **user / download** — `getUser`, `getTrackBuffer`, `streamTrack`,
+  `downloadTrack`, `downloadTracks`, `downloadUrl`, `trackPreview`, `downloadPreview`
 
 Every download call is silent; `downloadTracks` / `downloadUrl` accept
 `concurrency` and an `onProgress` callback and return one `{path, written} | null`
 per track.
+
+`streamTrack(track, quality?, options?)` returns `{stream, size, startedAt,
+isEncrypted}` — decrypted audio at constant memory, with `onProgress(got, total)`
+and `resumeFrom` (bytes). Pipe `stream` to a file or your own tag muxer.
 
 `searchAdvanced(filters, options?)` builds a Deezer advanced-search query from
 `{query?, artist?, album?, track?, label?, durMin?, durMax?, bpmMin?, bpmMax?}`
@@ -315,8 +319,10 @@ or `createSession`):
   `getEditorialCharts`, `getArtistTopTracks`, `getRelatedArtists`,
   `getArtistAlbums`, `getArtistPlaylists`, `getArtistRadioTracks`,
   `getTrackByISRC`, `getAlbumByUPC`
-- **Download** — `getTrackDownloadUrl`, `resolveDownloadUrls`, `getTrackPreview`,
-  `downloadPreview`, `formatName`, `toFormat`, `DEEZER_FORMATS`, `GeoBlocked`
+- **Download** — `getTrackDownloadUrl`, `resolveDownloadUrls`,
+  `streamTrackDownload`, `createDecryptStream`, `getStream`, `getTrackPreview`,
+  `downloadPreview`, `formatName`, `toFormat`, `DEEZER_FORMATS`
+- **Errors** — `DeezerError` (`code` / `keys` / `retryable`), `GeoBlocked`
 
 ### Auth & config helpers
 

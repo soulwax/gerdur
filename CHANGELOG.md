@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.11.0 - 2026-08-31
+
+### Fixed
+
+- **`--enrich`** now picks the right release. It was calling the Cover Art
+  Archive on a recording's *first* MusicBrainz release, which for many tracks is
+  a promo comp / bootleg with no art — so it silently fell back to Deezer's
+  cover. `gerdur-core@2.13.0`'s `getCoverArtByISRC` walks the release-groups
+  canonical-first (Official → Album → earliest) and returns the first real
+  cover (verified: 216 KB CAA cover vs Deezer's ~35 KB).
+
+### Added
+
+- Re-export `getCoverArtByISRC` / `getRecordingCoverArt`.
+
 ## 2.10.0 - 2026-08-31
 
 ### Added

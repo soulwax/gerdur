@@ -134,14 +134,65 @@ All options are optional. You can suppress prompts via providing `quality` and `
 | `--config-file`       |     `-conf`     |                               Config location. Example: `gerdur -conf my-gerdur.config.json`                                |                                                    Specify custom location to config file                                                     |
 | `--update`            |      `-U`       |                                                        *Nothing*                                                        |                                                       Download new update (binary only)                                                       |
 | `--help`              |      `-h`       |                                                        *Nothing*                                                        |                                                              Shows the CLI help                                                               |
+| `--search`            |     *None*      |                                                     free-text query                                                     |                                    Search tracks and pick what to download. Combine with the filters below.                                    |
+| `--artist`            |     *None*      |                                                      artist name                                                       |                                                  Search filter — restrict results to this artist                                              |
+| `--album`             |     *None*      |                                                      album title                                                       |                                                   Search filter — restrict results to this album                                              |
+| `--track`             |     *None*      |                                                      track title                                                       |                                                   Search filter — restrict results to this title                                              |
+| `--label`             |     *None*      |                                                     record label                                                      |                                                   Search filter — restrict results to this label                                              |
+| `--bpm-min` / `--bpm-max` | *None*      |                                                        number                                                          |                                                    Search filter — tempo range (beats per minute)                                            |
+| `--dur-min` / `--dur-max` | *None*      |                                                    number (seconds)                                                    |                                                       Search filter — track duration range                                                    |
+| `--search-limit`      |     *None*      |                                                   number (default 50)                                                  |                                                       How many search results to fetch                                                        |
 
-## Search Parameters
+## Search
 
-|   Prefix    |   Description   |
-| :---------: | :-------------: |
-|  `artist:`  |  Search artist  |
-|  `album:`   |  Search album   |
-| `playlist:` | Search playlist |
+### From the interactive prompt
+
+When `gerdur` asks for *"a URL, a search term, or `search:<advanced query>`"*:
+
+| Input | Does |
+| :--- | :--- |
+| `Harder Better Faster Stronger` | plain track search — pick tracks to download |
+| `artist:daft punk` | artist search — pick an artist, then its discography |
+| `album:discovery` | album search — pick an album |
+| `playlist:deep focus` | playlist search — pick a playlist |
+| `search:artist:"daft punk" bpm_min:120` | advanced track search (see operators below) |
+
+### From flags (works headless)
+
+The `--search` / `--artist` / `--album` / `--track` / `--label` / `--bpm-min` /
+`--bpm-max` / `--dur-min` / `--dur-max` flags are composed into one Deezer
+advanced-search query, the matches are listed, and — interactively — you pick
+which to download. In `--headless` mode every match (up to `--search-limit`) is
+downloaded.
+
+```bash
+# interactive: search, then tick the tracks you want
+gerdur --artist "Daft Punk" --track "Around the World"
+
+# headless: grab the first 5 matches as FLAC
+gerdur -d -q flac --search "get lucky" --artist "Daft Punk" --search-limit 5
+
+# tempo / duration windows
+gerdur --artist "Justice" --bpm-min 120 --bpm-max 130 --dur-min 180
+```
+
+Search hits are resolved to full tracks (via `getTrackInfo`) before downloading,
+so quality fallback, tagging and `.lrc` sidecars all work as normal.
+
+### Advanced query operators
+
+Usable inside `--search`, after `search:`, or via `buildAdvancedQuery` in code.
+Deezer applies them as ranking hints (not hard filters), and they bite reliably
+only on **track** search:
+
+| Operator | Example |
+| :--- | :--- |
+| `artist:` | `artist:"daft punk"` |
+| `album:` | `album:"discovery"` |
+| `track:` | `track:"one more time"` |
+| `label:` | `label:"Virgin"` |
+| `dur_min:` / `dur_max:` | `dur_min:200` (seconds) |
+| `bpm_min:` / `bpm_max:` | `bpm_min:120` |
 
 ## Programmatic API
 
@@ -189,8 +240,12 @@ Session methods: `parseUrl`, `search`, `searchAdvanced`, `suggest`, `getUser`,
 call is silent; `downloadTracks` / `downloadUrl` accept `concurrency` and an
 `onProgress` callback and return one `{path, written} | null` per track.
 
-`searchAdvanced` returns public-API track objects; fetch a hit's gw track with
-`getTrackInfo(id)` before downloading it.
+`searchAdvanced(filters, options?)` builds a Deezer advanced-search query from
+`{query?, artist?, album?, track?, label?, durMin?, durMax?, bpmMin?, bpmMax?}`
+and takes `{order?, strict?, limit?, index?, fallback?}`. Deezer's operators are
+unreliable, so an empty result is retried as a plain free-text query unless
+`fallback: false`. It returns public-API track objects — fetch a hit's gw track
+with `getTrackInfo(id)` before downloading it.
 
 ### Low-level: primitives
 

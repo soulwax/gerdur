@@ -31,7 +31,7 @@ line at the top of each script to `require('gerdur')`.
 | File | What it shows |
 | :--- | :--- |
 | [`login.js`](login.js) | Fetch an `arl` from email/password (or verify an existing `arl`). |
-| [`search.js`](search.js) | Search Deezer and print track results. |
+| [`search.js`](search.js) | Search Deezer and print track results. `--advanced` demos `searchAdvanced` + `suggest`. |
 | [`track-info.js`](track-info.js) | Look up a single track's metadata and lyrics. |
 | [`get-buffer.js`](get-buffer.js) | Get a tagged audio `Buffer` in memory (no file written). |
 | [`download-url.js`](download-url.js) | Resolve any Deezer/Spotify/Tidal URL and download it with a progress bar. |

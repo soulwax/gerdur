@@ -54,7 +54,9 @@ Throws if neither an `arl` nor email+password is provided, or if login fails.
 | Method | Returns | Description |
 | :--- | :--- | :--- |
 | `parseUrl(url)` | `Promise<{tracks, linkinfo, linktype, ...}>` | Resolve any Deezer/Spotify/Tidal URL into info + track list. |
-| `search(query, types?, limit?)` | `Promise<searchType>` | Search Deezer. `types` defaults to `['TRACK']`. |
+| `search(query, types?, limit?)` | `Promise<searchType>` | Search Deezer (internal `pageSearch`). `types` defaults to `['TRACK']`. |
+| `searchAdvanced(filters, opts?)` | `Promise<publicApiSearchResponse<searchResultTrack>>` | Structured public-REST track search — `{query?, artist?, album?, track?, label?, durMin?, durMax?, bpmMin?, bpmMax?}` + `{order?, strict?, limit?, index?, fallback?}`. `fallback` (default `true`) retries an empty operator result as plain text. Returns public-API tracks (`isrc`, `preview`); fetch a hit's gw track with `getTrackInfo(id)` to download. |
+| `suggest(query, nb?)` | `Promise<suggestResult>` | `deezer.suggest` autocomplete (gw-shaped per-type arrays). |
 | `getUser()` | `Promise<userType>` | The logged-in user profile. |
 | `getTrackBuffer(track, quality?, opts?)` | `Promise<Buffer \| null>` | Tagged audio in memory (no disk write). |
 | `downloadTrack(track, quality?, opts?)` | `Promise<DownloadResult \| null>` | Download one track to disk. |
@@ -204,16 +206,31 @@ otherwise the global path.
 Re-exported from `gerdur-core` so you don't need it as a second
 dependency. Call after `initDeezerApi(arl)` or `createSession(...)`.
 
-`initDeezerApi`, `parseInfo`, `searchMusic`, `getUser`, `getTrackInfo`,
-`getAlbumInfo`, `getAlbumTracks`, `getPlaylistInfo`, `getPlaylistTracks`,
-`getArtistInfo`, `getDiscography`, `getLyrics`, `getTrackDownloadUrl`,
-`GeoBlocked`.
+`initDeezerApi`, `parseInfo`, `searchMusic`, `searchPublicApi`, `searchTracks`,
+`searchAlbums`, `searchArtists`, `searchPlaylists`, `buildAdvancedQuery`,
+`suggest`, `getUser`, `getTrackInfo`, `getAlbumInfo`, `getAlbumTracks`,
+`getPlaylistInfo`, `getPlaylistTracks`, `getArtistInfo`, `getDiscography`,
+`getLyrics`, `getTrackDownloadUrl`, `resolveDownloadUrls`, `GeoBlocked`.
 
 ```ts
 await initDeezerApi(arl);
 const album = await getAlbumInfo('302127');
 const {data} = await getAlbumTracks('302127');
+
+// Advanced search on the public REST API:
+const q = buildAdvancedQuery({artist: 'daft punk', durMin: 200}); // 'artist:"daft punk" dur_min:200'
+const {data: tracks} = await searchTracks(q, {limit: 25, order: 'RANKING'});
 ```
+
+### Search functions
+
+| Function | Notes |
+| :--- | :--- |
+| `searchMusic(query, types?, nb?)` | internal `deezer.pageSearch`; gw entity objects, download-ready `trackType`s. |
+| `searchPublicApi(query, opts?)` | `api.deezer.com/search`; `opts.type` = `'track'` (default) / `'album'` / `'artist'` / `'playlist'` / `'user'` / `'radio'` / `'podcast'`, plus `order` / `strict` / `limit` / `index`. |
+| `searchTracks` / `searchAlbums` / `searchArtists` / `searchPlaylists` | `searchPublicApi` with `type` fixed. |
+| `buildAdvancedQuery(filters)` | pure; `{query?, artist?, album?, track?, label?, durMin?, durMax?, bpmMin?, bpmMax?}` → one query string. Operators bite reliably only on the track index. |
+| `suggest(query, nb?)` | `deezer.suggest` autocomplete. |
 
 ---
 
@@ -222,6 +239,11 @@ const {data} = await getAlbumTracks('302127');
 Exported TypeScript types: `SessionOptions`, `DownloadTracksOptions`,
 `SearchType`, `Quality`, `GetTrackBufferOptions`, `DownloadTrackOptions`,
 `DownloadResult`, `LoginResult`.
+
+Search types (also re-exported): `advancedSearchFilters`, `searchOrder`,
+`searchEntity`, `publicApiSearchOptions`, `publicApiSearchResponse<T>`,
+`searchResultTrack`, `searchResultAlbum`, `searchResultArtist`,
+`searchResultPlaylist`, `suggestResult`.
 
 Deezer entity types (`trackType`, `albumType`, `userType`, …) come from
 `gerdur-core/types`.

@@ -1,6 +1,46 @@
 import test from 'ava';
 import {buildAdvancedQuery} from 'gerdur-core';
 import * as gerdur from '../../src';
+import {advancedFiltersFromFlags, plainTextQuery, searchAdvancedTracks} from '../../src/lib/search';
+
+test('advancedFiltersFromFlags folds CLI flags (and returns null when none set)', (t) => {
+  t.is(advancedFiltersFromFlags({}), null);
+  t.is(advancedFiltersFromFlags({artist: '   ', search: ''}), null);
+
+  const filters = advancedFiltersFromFlags({
+    search: '  one more time  ',
+    artist: 'daft punk',
+    bpmMin: '120',
+    durMax: 'nope',
+    durMin: '200',
+  });
+  if (!filters) {
+    t.fail('expected filters');
+    return;
+  }
+  t.deepEqual(filters, {
+    query: 'one more time',
+    artist: 'daft punk',
+    album: undefined,
+    track: undefined,
+    label: undefined,
+    durMin: 200,
+    durMax: undefined,
+    bpmMin: 120,
+    bpmMax: undefined,
+  });
+  t.is(buildAdvancedQuery(filters), 'one more time artist:"daft punk" dur_min:200 bpm_min:120');
+});
+
+test('plainTextQuery joins the text fields', (t) => {
+  t.is(plainTextQuery({query: 'get lucky', artist: 'daft punk', bpmMin: 120}), 'get lucky daft punk');
+  t.is(plainTextQuery({bpmMin: 120}), '');
+});
+
+test('searchAdvancedTracks short-circuits an empty query without hitting the network', async (t) => {
+  const res = await searchAdvancedTracks({});
+  t.deepEqual(res, {data: [], total: 0, query: '', usedFallback: false});
+});
 
 test('buildAdvancedQuery composes Deezer operators', (t) => {
   t.is(

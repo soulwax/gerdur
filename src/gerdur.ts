@@ -4,7 +4,15 @@ import {readFileSync, writeFileSync} from 'fs';
 import {dirname, join, resolve, sep} from 'path';
 import {Command} from 'commander';
 import gradient from 'gradient-string';
-import {getUser, initDeezerApi, searchMusic, parseInfo, getDiscography, resolveDownloadUrls} from 'gerdur-core';
+import {
+  getUser,
+  initDeezerApi,
+  searchMusic,
+  getTrackInfo,
+  parseInfo,
+  getDiscography,
+  resolveDownloadUrls,
+} from 'gerdur-core';
 import prompts from 'prompts';
 import logUpdate from 'log-update';
 import PQueue from 'p-queue';
@@ -17,8 +25,17 @@ import updateCheck from './lib/update-check';
 import autoUpdater from './lib/auto-updater';
 import {ensureArl, recoverFromLoginFailure, runSetup} from './lib/arl-setup';
 import {commonPath, formatSecondsReadable, sanitizeFilename} from './lib/util';
+import {advancedFiltersFromFlags, searchAdvancedTracks} from './lib/search';
 import pkg from '../package.json';
-import type {artistType, trackType, albumType, playlistInfo, playlistInfoMinimal} from 'gerdur-core/types';
+import type {
+  artistType,
+  trackType,
+  albumType,
+  playlistInfo,
+  playlistInfoMinimal,
+  advancedSearchFilters,
+  searchResultTrack,
+} from 'gerdur-core/types';
 
 // App info
 console.log(
@@ -46,7 +63,17 @@ const cmd = new Command()
   .option('-d, --headless', 'Run in headless mode for scripting automation', false)
   .option('-conf, --config-file <file>', 'Custom location to your config file', 'gerdur.config.json')
   .option('-rfp, --resolve-full-path', 'Use absolute path for playlists')
-  .option('-cp, --create-playlist', 'Force create a playlist file for non playlists');
+  .option('-cp, --create-playlist', 'Force create a playlist file for non playlists')
+  .option('--search <query>', 'Search tracks by free text (combine with the filters below)')
+  .option('--artist <name>', 'Search filter: artist name')
+  .option('--album <name>', 'Search filter: album title')
+  .option('--track <name>', 'Search filter: track title')
+  .option('--label <name>', 'Search filter: record label')
+  .option('--bpm-min <n>', 'Search filter: minimum BPM')
+  .option('--bpm-max <n>', 'Search filter: maximum BPM')
+  .option('--dur-min <seconds>', 'Search filter: minimum duration')
+  .option('--dur-max <seconds>', 'Search filter: maximum duration')
+  .option('--search-limit <n>', 'Max search results to fetch', '50');
 
 if ((process as any).pkg) {
   cmd.option('-U, --update', 'Update this program to latest version');
@@ -61,14 +88,26 @@ if (cmd.args[0] && cmd.args[0].toLowerCase() === 'setup') {
 if (!options.url && cmd.args[0]) {
   options.url = cmd.args[0];
 }
+
+const toFiniteNumber = (value: unknown): number | undefined => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
+};
+
+const advancedFilters = advancedFiltersFromFlags(options);
+let advancedFiltersConsumed = false;
+
 if (options.headless && !options.quality) {
   console.error(signale.error('Missing parameters --quality'));
   console.error(signale.note('Quality must be provided with headless mode'));
   process.exit(1);
 }
-if (options.headless && !options.url && !options.inputFile) {
+if (options.headless && !options.url && !options.inputFile && !advancedFilters) {
   console.error(signale.error('Missing parameters --url'));
-  console.error(signale.note('URL must be provided with headless mode'));
+  console.error(signale.note('Provide --url, --input-file, or a --search / --artist / … filter with headless mode'));
   process.exit(1);
 }
 
@@ -85,8 +124,81 @@ const onCancel = () => {
   process.exit();
 };
 
+type SearchData = {
+  info: {type: 'track'; id: string};
+  linktype: 'track';
+  /* eslint-disable-next-line */
+  linkinfo: {};
+  tracks: trackType[];
+};
+
+const stampVersion = (t: trackType): trackType => {
+  if (t.VERSION && !t.SNG_TITLE.includes(t.VERSION)) {
+    t.SNG_TITLE += ' ' + t.VERSION;
+  }
+  return t;
+};
+
+/**
+ * Run an advanced (public-REST) track search, let the user pick, and hydrate the
+ * picks into download-ready gw tracks via `getTrackInfo`. Returns `null` when
+ * nothing was matched or selected.
+ */
+const resolveAdvancedSearch = async (filters: advancedSearchFilters): Promise<SearchData | null> => {
+  const limit = toFiniteNumber(options.searchLimit) ?? 50;
+  const {data: results, query, usedFallback} = await searchAdvancedTracks(filters, {limit});
+  if (!query) {
+    return null;
+  }
+  console.log(signale.info(`Searching Deezer for: ${chalk.cyan(query)}`));
+  if (usedFallback) {
+    console.log(signale.note('No matches for the operators — retried as a plain-text search.'));
+  }
+
+  if (!results.length) {
+    console.log(signale.warn('No tracks matched that search.'));
+    return null;
+  }
+
+  let picks: searchResultTrack[] = results;
+  if (!options.headless) {
+    const choice: {items?: searchResultTrack[]} = await prompts(
+      [
+        {
+          type: 'multiselect',
+          name: 'items',
+          message: `Select tracks to download. ${results.length} matched.`,
+          choices: results.map((r) => ({
+            title: `${r.title} — ${r.artist?.name ?? 'Unknown'}`,
+            value: r,
+            description: `Album: ${r.album?.title ?? 'Unknown'} · ${formatSecondsReadable(r.duration)}${
+              r.explicit_lyrics ? ' · explicit' : ''
+            }`,
+          })),
+        },
+      ],
+      {onCancel},
+    );
+    picks = choice.items ?? [];
+  }
+  if (!picks.length) {
+    return null;
+  }
+
+  console.log(signale.info(`Fetching track data for ${picks.length} ${picks.length === 1 ? 'track' : 'tracks'}…`));
+  const hydrated = await Promise.all(picks.map((r) => getTrackInfo(String(r.id)).catch(() => null)));
+  const tracks = hydrated.filter((t): t is trackType => Boolean(t && t.SNG_ID)).map(stampVersion);
+  if (!tracks.length) {
+    console.log(signale.warn('None of the selected tracks could be resolved.'));
+    return null;
+  }
+
+  return {info: {type: 'track', id: query}, linktype: 'track', linkinfo: {}, tracks};
+};
+
 const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) => {
   try {
+    url = url ?? '';
     if (!options.quality) {
       const {musicQuality} = await prompts(
         [
@@ -107,13 +219,28 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
       options.quality = musicQuality;
     }
 
-    if (!url) {
+    let searchData: SearchData | null = null;
+
+    // `--search` / `--artist` / `--bpm-min` … flags: structured search, no URL needed.
+    // Consumed once — the interactive re-prompt loop must not re-run it.
+    if (!url && advancedFilters && !advancedFiltersConsumed) {
+      advancedFiltersConsumed = true;
+      searchData = await resolveAdvancedSearch(advancedFilters);
+      if (!searchData) {
+        if (options.headless) {
+          throw new Error('No tracks matched the search filters.');
+        }
+        return;
+      }
+    }
+
+    if (!searchData && !url) {
       const {query} = await prompts(
         [
           {
             type: 'text',
             name: 'query',
-            message: 'Enter URL or search:',
+            message: 'Enter a URL, a search term, or `search:<advanced query>`:',
             validate: (value) => (value ? true : false),
           },
         ],
@@ -122,15 +249,15 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
       url = query;
     }
 
-    let searchData: {
-      info: {type: 'track'; id: string};
-      linktype: 'track';
-      /* eslint-disable-next-line */
-      linkinfo: {};
-      tracks: trackType[];
-    } | null = null;
+    // `search:` prefix — advanced track search from the prompt or `-u search:…`.
+    if (!searchData && url && url.startsWith('search:')) {
+      searchData = await resolveAdvancedSearch({query: url.slice('search:'.length).trim()});
+      if (!searchData) {
+        throw new Error('No tracks matched that search.');
+      }
+    }
 
-    if (!url.match(urlRegex)) {
+    if (!searchData && !url.match(urlRegex)) {
       if (options.headless) {
         throw new Error('Please provide a valid URL. Unknown URL: ' + url);
       }
@@ -196,12 +323,7 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
           info: {type: 'track', id: url},
           linktype: 'track',
           linkinfo: {},
-          tracks: TRACK.data.map((t) => {
-            if (t.VERSION && !t.SNG_TITLE.includes(t.VERSION)) {
-              t.SNG_TITLE += ' ' + t.VERSION;
-            }
-            return t;
-          }),
+          tracks: TRACK.data.map(stampVersion),
         };
       }
     } else if (url.match(/playlist|artist/)) {

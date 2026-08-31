@@ -1,13 +1,14 @@
 import PQueue from 'p-queue';
-import {initDeezerApi, getUser, parseInfo, searchMusic, searchTracks, buildAdvancedQuery, suggest} from 'gerdur-core';
+import {initDeezerApi, getUser, parseInfo, searchMusic, suggest} from 'gerdur-core';
 import {loginWithEmail} from './email-login';
 import {getTrackBuffer, downloadTrackToFile} from './api-download';
+import {searchAdvancedTracks} from './search';
+import type {AdvancedSearchOptions} from './search';
 import type {Quality, DownloadTrackOptions, DownloadResult} from './api-download';
 import type {
   trackType,
   userType,
   advancedSearchFilters,
-  publicApiSearchOptions,
   publicApiSearchResponse,
   searchResultTrack,
   suggestResult,
@@ -110,13 +111,15 @@ export class Session {
    * public-API track objects (with `isrc`, `preview`); to download a result,
    * fetch its gw track first with the re-exported `getTrackInfo(id)`.
    *
-   * Deezer applies the operators loosely — see `buildAdvancedQuery`.
+   * Deezer's advanced operators are unreliable, so an empty result is retried as
+   * a plain free-text query unless `options.fallback` is `false`.
    */
-  searchAdvanced(
+  async searchAdvanced(
     filters: advancedSearchFilters,
-    options: Omit<publicApiSearchOptions, 'type'> = {},
+    options: AdvancedSearchOptions = {},
   ): Promise<publicApiSearchResponse<searchResultTrack>> {
-    return searchTracks(buildAdvancedQuery(filters), options);
+    const {query: _query, usedFallback: _usedFallback, ...response} = await searchAdvancedTracks(filters, options);
+    return response;
   }
 
   /** `deezer.suggest` autocomplete — for "as you type" UIs. `nb` caps items per type. */

@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.2.0 - 2026-08-31
+
+### Added
+
+- **CLI search.** New flags — `--search`, `--artist`, `--album`, `--track`,
+  `--label`, `--bpm-min` / `--bpm-max`, `--dur-min` / `--dur-max`,
+  `--search-limit` — are composed into a Deezer advanced-search query. The
+  matches are listed and you tick which to download; `--headless` grabs every
+  match up to `--search-limit`. Hits are resolved to full tracks before
+  downloading, so quality fallback / tagging / `.lrc` sidecars all work.
+- **`search:` prefix** at the interactive prompt (and `-u 'search:…'`) runs the
+  same advanced track search, e.g. `search:artist:"daft punk" bpm_min:120`.
+- When Deezer's advanced operators return nothing (they are unreliable), the CLI
+  automatically retries the same words as a plain free-text query.
+
+### Changed
+
+- **`Session.searchAdvanced`** now falls back to a plain free-text query when the
+  advanced operators match nothing (opt out with `{fallback: false}`), and
+  accepts `fallback` in its options.
+- The interactive prompt now reads "Enter a URL, a search term, or
+  `search:<advanced query>`".
+- Search / filter helpers extracted to `src/lib/search.ts`
+  (`advancedFiltersFromFlags`, `searchAdvancedTracks`, `plainTextQuery`).
+
 ## 2.1.0 - 2026-08-31
 
 ### Added

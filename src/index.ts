@@ -88,6 +88,8 @@ export {
   getMusicBrainzRelease,
   getCoverArt,
   getBestCoverArtUrl,
+  getRecordingCoverArt,
+  getCoverArtByISRC,
   PoliteJsonClient,
 } from 'gerdur-core';
 export type {MBRecording, MBRelease, MBArtistCredit, CoverArt, CoverArtImage} from 'gerdur-core';

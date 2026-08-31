@@ -10,8 +10,7 @@ import {
   httpAgent,
   httpsAgent,
   getBuffer,
-  lookupRecordingByISRC,
-  getBestCoverArtUrl,
+  getCoverArtByISRC,
 } from 'gerdur-core';
 import logUpdate from 'log-update';
 import chalk from 'chalk';
@@ -229,9 +228,7 @@ const downloadTrack = async ({
     let enrichedCover: Buffer | undefined;
     if (enrich && track.ISRC && !simulate) {
       try {
-        const rec = await lookupRecordingByISRC(track.ISRC);
-        const rgid = rec?.releases.find((r) => r.releaseGroupMbid)?.releaseGroupMbid;
-        const coverUrl = rgid ? await getBestCoverArtUrl(rgid, {minSize: 1200}) : null;
+        const coverUrl = await getCoverArtByISRC(track.ISRC, {minSize: 1200});
         if (coverUrl) {
           enrichedCover = await getBuffer(coverUrl);
           logUpdate(signale.note(`Using a higher-res cover from the Cover Art Archive for ${track.SNG_TITLE}`));

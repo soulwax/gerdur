@@ -163,6 +163,8 @@ When `gerdur` asks for a URL, a search term, or a prefixed query:
 | `flow:2064440442` | pick tracks from another user's Flow |
 | `radio:38305` | pick tracks from a radio's current playlist |
 | `chart` / `chart:132` | pick tracks from this week's chart (optionally a genre) |
+| `artist-top:27` | pick from an artist's most popular tracks |
+| `episode:294961882` | download a single podcast episode (plain MP3, to `Podcasts/`) |
 
 `isrc:` / `upc:` / `flow` / `radio:` also work in `--headless` mode (`-u flow`, …).
 
@@ -329,10 +331,11 @@ or `createSession`):
 - **Flow / library** — `getUserFlow`, `getUserFavoriteTracks`,
   `getUserFavoriteAlbums`, `getUserFavoriteArtists`, `getUserPlaylists`,
   `getUserRadios`, `getUserChartTracks`, `getRadios`, `getRadioTracks`,
-  `getRadioGenres`
+  `getRadioGenres`, `getEpisode`, `getShowEpisodes`
 - **Download** — `getTrackDownloadUrl`, `resolveDownloadUrls`,
-  `streamTrackDownload`, `downloadTrackBuffer`, `createDecryptStream`, `getStream`,
-  `getTrackPreview`, `downloadPreview`, `formatName`, `toFormat`, `DEEZER_FORMATS`
+  `refreshTrackTokens`, `streamTrackDownload`, `downloadTrackBuffer`,
+  `createDecryptStream`, `getStream`, `getTrackPreview`, `downloadPreview`,
+  `formatName`, `toFormat`, `DEEZER_FORMATS`
 - **Errors** — `DeezerError` (`code` / `keys` / `retryable`), `GeoBlocked`
 - **Low-level sessions** — `createCoreSession(arl)` / `CoreSession` /
   `defaultSession` from `gerdur-core`: an isolated client (its own `arl`, cache,

@@ -35,6 +35,9 @@ test('the library re-exports the browse surface', (t) => {
     'downloadTrackBuffer',
     'createCoreSession',
     'defaultSession',
+    'getEpisode',
+    'getShowEpisodes',
+    'refreshTrackTokens',
   ] as const) {
     t.is(typeof (gerdur as Record<string, unknown>)[name], 'function', `${name} is re-exported`);
   }

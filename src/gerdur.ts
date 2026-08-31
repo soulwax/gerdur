@@ -4,6 +4,7 @@ import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'fs';
 import {dirname, join, resolve, sep} from 'path';
 import {Command} from 'commander';
 import gradient from 'gradient-string';
+import got from 'got';
 import {
   getUser,
   initDeezerApi,
@@ -14,6 +15,9 @@ import {
   getUserFlow,
   getRadioTracks,
   getChartTracks,
+  getArtistTopTracks,
+  getEpisode,
+  refreshTrackTokens,
   downloadPreview,
   parseInfo,
   getDiscography,
@@ -107,7 +111,8 @@ const toFiniteNumber = (value: unknown): number | undefined => {
 const advancedFilters = advancedFiltersFromFlags(options);
 let advancedFiltersConsumed = false;
 
-if (options.headless && !options.quality && !options.preview) {
+const isEpisodeUrl = String(options.url ?? '').startsWith('episode:');
+if (options.headless && !options.quality && !options.preview && !isEpisodeUrl) {
   console.error(signale.error('Missing parameters --quality'));
   console.error(signale.note('Quality must be provided with headless mode'));
   process.exit(1);
@@ -147,14 +152,9 @@ const stampVersion = (t: trackType): trackType => {
 };
 
 /**
- * Run an advanced (public-REST) track search, let the user pick, and hydrate the
- * picks into download-ready gw tracks via `getTrackInfo`. Returns `null` when
- * nothing was matched or selected.
- */
-/**
- * Given a list of public-API track objects (from search / flow / a radio), let
- * the user pick (unless headless) and hydrate the picks into download-ready gw
- * tracks via `getTrackInfo`.
+ * Given a list of public-API track objects (from search / flow / a radio / a
+ * chart), let the user pick (unless headless) and hydrate the picks into
+ * download-ready gw tracks via `getTrackInfo`.
  */
 const pickAndHydrate = async (results: searchResultTrack[], id: string): Promise<SearchData | null> => {
   if (!results.length) {
@@ -262,7 +262,7 @@ const downloadPreviews = async (
 const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) => {
   try {
     url = url ?? '';
-    if (!options.quality && !options.preview) {
+    if (!options.quality && !options.preview && !url.startsWith('episode:')) {
       const {musicQuality} = await prompts(
         [
           {
@@ -304,7 +304,7 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
             type: 'text',
             name: 'query',
             message:
-              'Enter a URL, a search term, or `search:` / `isrc:` / `upc:` / `flow` / `radio:<id>` / `chart[:<genre>]`:',
+              'Enter a URL, a search term, or a prefix (search: isrc: upc: flow radio: chart artist-top: episode:):',
             validate: (value) => (value ? true : false),
           },
         ],
@@ -372,6 +372,39 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
       if (!searchData) {
         throw new Error('Chart returned no tracks.');
       }
+    }
+
+    // `artist-top:<id>` — an artist's most popular tracks.
+    if (!searchData && url && url.startsWith('artist-top:')) {
+      const aid = url.slice('artist-top:'.length).trim();
+      console.log(signale.info(`Fetching top tracks for artist ${aid}…`));
+      const {data} = await getArtistTopTracks(aid, toFiniteNumber(options.searchLimit) ?? 50);
+      searchData = await pickAndHydrate(data, `artist-top:${aid}`);
+      if (!searchData) {
+        throw new Error(`Artist ${aid} returned no top tracks.`);
+      }
+    }
+
+    // `episode:<id>` — a podcast episode (a plain MP3: no licence, decryption or tagging).
+    if (!searchData && url && url.startsWith('episode:')) {
+      const eid = url.slice('episode:'.length).trim();
+      const episode = await getEpisode(eid);
+      if (!episode.EPISODE_DIRECT_STREAM_URL) {
+        throw new Error(`Episode ${eid} has no direct stream.`);
+      }
+      const dir = options.output ? dirname(options.output) : 'Podcasts';
+      const dest = join(
+        dir,
+        sanitizeFilename(`${episode.SHOW_NAME} - ${episode.EPISODE_TITLE}`.slice(0, 180)) + '.mp3',
+      );
+      console.log(signale.info(`Downloading episode: ${episode.EPISODE_TITLE}`));
+      if (options.overwrite || !existsSync(dest)) {
+        mkdirSync(dir, {recursive: true});
+        const {body} = await got(episode.EPISODE_DIRECT_STREAM_URL, {responseType: 'buffer'});
+        writeFileSync(dest, body);
+      }
+      console.log(signale.success(`Saved ${dest}`));
+      return;
     }
 
     if (!searchData && !url.match(urlRegex)) {
@@ -530,6 +563,10 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
         >();
         if (data.tracks.length > 1 && !process.env.SIMULATE) {
           try {
+            // TRACK_TOKENs expire ~1h — refresh any stale ones so a long download
+            // doesn't start failing partway through with opaque CDN 403s.
+            data.tracks = await refreshTrackTokens(data.tracks);
+
             const base = QUALITY_PREF[String(options.quality).toLowerCase()] ?? [3, 1];
             const pref = fallbackQuality ? base : [base[0]];
             const resolved = await resolveDownloadUrls(data.tracks, pref);

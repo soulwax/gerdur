@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.8.0 - 2026-08-31
+
+### Added
+
+- **`gerdur-core@^2.10.0`** — re-exports `refreshTrackTokens`, `getEpisode`,
+  `getShowEpisodes`.
+- **CLI `artist-top:<id>`** — pick from an artist's most popular tracks.
+- **CLI `episode:<id>`** — download a single podcast episode (plain MP3, no
+  `--quality` needed, saved to `Podcasts/`).
+
+### Changed
+
+- Batch downloads (album / playlist / search selection) now **refresh stale
+  `TRACK_TOKEN`s** before resolving URLs — a long playlist no longer starts
+  failing partway through with opaque CDN 403s.
+
 ## 2.7.0 - 2026-08-31
 
 ### Added

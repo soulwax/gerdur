@@ -17,6 +17,8 @@ import {
   getRadioTracks,
   getChartTracks,
   getArtistTopTracks,
+  getTrackMix,
+  getMyFavoriteTracks,
   getEpisode,
   refreshTrackTokens,
   downloadPreview,
@@ -205,6 +207,42 @@ const pickAndHydrate = async (results: searchResultTrack[], id: string): Promise
   return {info: {type: 'track', id}, linktype: 'track', linkinfo: {}, tracks};
 };
 
+/**
+ * Like `pickAndHydrate`, but for gateway tracks — the library and mix endpoints
+ * already return full tracks with `TRACK_TOKEN`s, so there is nothing to fetch.
+ */
+const pickGwTracks = async (results: trackType[], id: string): Promise<SearchData | null> => {
+  if (!results.length) {
+    console.log(signale.warn('Nothing to download.'));
+    return null;
+  }
+
+  let picks: trackType[] = results;
+  if (!options.headless) {
+    const choice: {items?: trackType[]} = await prompts(
+      [
+        {
+          type: 'multiselect',
+          name: 'items',
+          message: `Select tracks to download. ${results.length} available.`,
+          choices: results.map((r) => ({
+            title: `${r.SNG_TITLE} — ${r.ART_NAME}`,
+            value: r,
+            description: `Album: ${r.ALB_TITLE ?? 'Unknown'} · ${formatSecondsReadable(Number(r.DURATION) || 0)}`,
+          })),
+        },
+      ],
+      {onCancel},
+    );
+    picks = choice.items ?? [];
+  }
+  if (!picks.length) {
+    return null;
+  }
+
+  return {info: {type: 'track', id}, linktype: 'track', linkinfo: {}, tracks: picks.map(stampVersion)};
+};
+
 const resolveAdvancedSearch = async (filters: advancedSearchFilters): Promise<SearchData | null> => {
   const limit = toFiniteNumber(options.searchLimit) ?? 50;
   const {data: results, query, usedFallback} = await searchAdvancedTracks(filters, {limit});
@@ -311,7 +349,7 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
             type: 'text',
             name: 'query',
             message:
-              'Enter a URL, a search term, or a prefix (search: isrc: upc: flow radio: chart artist-top: episode:):',
+              'Enter a URL, a search term, or a prefix (search: isrc: upc: flow radio: chart artist-top: mix: library episode:):',
             validate: (value) => (value ? true : false),
           },
         ],
@@ -390,6 +428,28 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
       if (!searchData) {
         throw new Error(`Artist ${aid} returned no top tracks.`);
       }
+    }
+
+    // `mix:<trackId>` — a "more like this" mix. Tokens come attached, so unlike
+    // the public radio sources there is no per-track lookup before downloading.
+    if (!searchData && url && url.startsWith('mix:')) {
+      const sid = url.slice('mix:'.length).trim();
+      console.log(signale.info(`Building a mix from track ${sid}…`));
+      const {data} = await getTrackMix(sid, toFiniteNumber(options.searchLimit) ?? 40);
+      searchData = await pickGwTracks(data, `mix:${sid}`);
+      if (!searchData) {
+        throw new Error(`Track ${sid} returned no mix.`);
+      }
+    }
+
+    // `library` — the logged-in account's loved tracks, private ones included.
+    if (!searchData && url && (url === 'library' || url === 'favorites' || url === 'favourites')) {
+      console.log(signale.info('Fetching your loved tracks…'));
+      const {data, total} = await getMyFavoriteTracks(undefined, toFiniteNumber(options.searchLimit) ?? 100);
+      if (!data.length) {
+        throw new Error(`Your library has no loved tracks (total ${total}).`);
+      }
+      searchData = await pickGwTracks(data, 'library');
     }
 
     // `episode:<id>` — a podcast episode (a plain MP3: no licence, decryption or tagging).

@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.14.0 - 2026-08-31
+
+### Added
+
+- **`mix:<trackId>`** — download a "more like this" mix seeded from a track.
+  Backed by `gerdur-core@2.17.0`'s `getTrackMix`, which returns tracks with
+  their `TRACK_TOKEN`s already attached, so unlike the public radio sources
+  there is no per-track lookup before downloading.
+- **`library`** (also `favorites` / `favourites`) — pick from the logged-in
+  account's own loved tracks, **private library included**. The public profile
+  endpoints can't see these.
+- **`gerdur-core@^2.17.0`** — re-exports the whole private-library surface:
+  `getMyPlaylists`, `getMyFavorite{Tracks,TrackIds,Albums,Artists,Playlists,Radios,Shows}`,
+  `getTrackMix`.
+
 ## 2.13.0 - 2026-08-31
 
 ### Added

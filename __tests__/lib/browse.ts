@@ -32,6 +32,9 @@ test('the library re-exports the browse surface', (t) => {
     'getRadios',
     'getRadioTracks',
     'getRadioGenres',
+    'downloadTrackBuffer',
+    'createCoreSession',
+    'defaultSession',
   ] as const) {
     t.is(typeof (gerdur as Record<string, unknown>)[name], 'function', `${name} is re-exported`);
   }

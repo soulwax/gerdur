@@ -162,6 +162,7 @@ When `gerdur` asks for a URL, a search term, or a prefixed query:
 | `flow` | pick tracks from your Deezer **Flow** |
 | `flow:2064440442` | pick tracks from another user's Flow |
 | `radio:38305` | pick tracks from a radio's current playlist |
+| `chart` / `chart:132` | pick tracks from this week's chart (optionally a genre) |
 
 `isrc:` / `upc:` / `flow` / `radio:` also work in `--headless` mode (`-u flow`, …).
 
@@ -330,9 +331,14 @@ or `createSession`):
   `getUserRadios`, `getUserChartTracks`, `getRadios`, `getRadioTracks`,
   `getRadioGenres`
 - **Download** — `getTrackDownloadUrl`, `resolveDownloadUrls`,
-  `streamTrackDownload`, `createDecryptStream`, `getStream`, `getTrackPreview`,
-  `downloadPreview`, `formatName`, `toFormat`, `DEEZER_FORMATS`
+  `streamTrackDownload`, `downloadTrackBuffer`, `createDecryptStream`, `getStream`,
+  `getTrackPreview`, `downloadPreview`, `formatName`, `toFormat`, `DEEZER_FORMATS`
 - **Errors** — `DeezerError` (`code` / `keys` / `retryable`), `GeoBlocked`
+- **Low-level sessions** — `createCoreSession(arl)` / `CoreSession` /
+  `defaultSession` from `gerdur-core`: an isolated client (its own `arl`, cache,
+  `license_token`) with `getTrackInfo` / `searchMusic` / `getTrackBuffer` / … for
+  talking to Deezer directly or from multiple accounts. gerdur's own
+  `createSession` / `Session` (above) is the higher-level download orchestrator.
 
 ### Auth & config helpers
 

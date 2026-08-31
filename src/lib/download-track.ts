@@ -1,12 +1,23 @@
 import got from 'got';
 import stream from 'stream';
-import {existsSync, mkdirSync, writeFileSync, createWriteStream, readFileSync, statSync, unlinkSync} from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  createReadStream,
+  createWriteStream,
+  renameSync,
+  statSync,
+  unlinkSync,
+} from 'fs';
 import {promisify} from 'util';
 import {dirname} from 'path';
 import {
   GeoBlocked,
   getTrackDownloadUrl,
-  addTrackTags,
+  resolveTagModel,
+  createTagStream,
+  createDecryptStream,
   httpAgent,
   httpsAgent,
   getBuffer,
@@ -16,7 +27,6 @@ import logUpdate from 'log-update';
 import chalk from 'chalk';
 import signale from '../lib/signale';
 import {saveLayout, progressBar} from './util';
-import {decryptFileToFile} from './decrypt';
 import type {trackType} from 'gerdur-core/types';
 
 const pipeline = promisify(stream.pipeline);
@@ -214,17 +224,6 @@ const downloadTrack = async ({
       createWriteStream(tmpfile, {flags: 'a', autoClose: true}),
     );
 
-    let outFile;
-    if (trackData.isEncrypted) {
-      logUpdate(signale.pending('Decrypting ' + track.SNG_TITLE + ' by ' + track.ART_NAME));
-      const decfile = tmpfile + '.dec';
-      await decryptFileToFile(tmpfile, decfile, track.SNG_ID); // streamed — ~one stripe in memory
-      outFile = readFileSync(decfile);
-      unlinkSync(decfile);
-    } else {
-      outFile = readFileSync(tmpfile);
-    }
-
     let enrichedCover: Buffer | undefined;
     if (enrich && track.ISRC && !simulate) {
       try {
@@ -239,13 +238,12 @@ const downloadTrack = async ({
     }
 
     logUpdate(signale.pending('Tagging ' + track.SNG_TITLE + ' by ' + track.ART_NAME));
-    const {buffer: trackWithMetadata, model} = await addTrackTags(outFile, track, {
+    // Resolve the metadata first, without touching the audio — the tags are then
+    // written by a stream, so the track is never held in memory.
+    const model = await resolveTagModel(track, {
       coverSize,
       ...(enrichedCover ? {cover: enrichedCover} : {}),
     });
-
-    // Delete temporary file now
-    unlinkSync(tmpfile);
 
     logUpdate(signale.pending('Saving ' + track.SNG_TITLE + ' by ' + track.ART_NAME));
     if (!simulate) {
@@ -254,12 +252,34 @@ const downloadTrack = async ({
       if (!existsSync(dir)) {
         mkdirSync(dir, {recursive: true});
       }
-      // Save file to disk
-      writeFileSync(savePath, trackWithMetadata);
+
+      // One pass: temp file -> decrypt -> tag -> destination. Peak memory is a
+      // couple of stripes plus the cover, instead of the whole track two or
+      // three times over. `.part` then rename so an interrupted run never
+      // leaves a half-written track behind.
+      const partPath = savePath + '.part';
+      const stages: any[] = [createReadStream(tmpfile)];
+      if (trackData.isEncrypted) {
+        stages.push(createDecryptStream(track.SNG_ID));
+      }
+      stages.push(createTagStream(model), createWriteStream(partPath));
+      try {
+        await (pipeline as any)(...stages);
+      } catch (err) {
+        if (existsSync(partPath)) {
+          unlinkSync(partPath);
+        }
+        throw err;
+      }
+      renameSync(partPath, savePath);
+
       if (lrc !== false && model.lyricsSynced) {
         writeFileSync(savePath.replace(/\.(mp3|flac)$/i, '.lrc'), model.lyricsSynced);
       }
     }
+
+    // Delete temporary file now
+    unlinkSync(tmpfile);
 
     // Print sucess info
     logUpdate(

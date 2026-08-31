@@ -22,6 +22,16 @@ test('the library re-exports the browse surface', (t) => {
     'downloadPreview',
     'formatName',
     'toFormat',
+    'getUserFlow',
+    'getUserFavoriteTracks',
+    'getUserFavoriteAlbums',
+    'getUserFavoriteArtists',
+    'getUserPlaylists',
+    'getUserRadios',
+    'getUserChartTracks',
+    'getRadios',
+    'getRadioTracks',
+    'getRadioGenres',
   ] as const) {
     t.is(typeof (gerdur as Record<string, unknown>)[name], 'function', `${name} is re-exported`);
   }
@@ -43,6 +53,14 @@ test('Session exposes the browse methods', (t) => {
     'albumByUPC',
     'trackPreview',
     'downloadPreview',
+    'flow',
+    'favoriteTracks',
+    'favoriteAlbums',
+    'favoriteArtists',
+    'playlists',
+    'userRadios',
+    'radios',
+    'radioTracks',
   ] as const) {
     t.is(typeof proto[name], 'function', `Session.${name}`);
   }

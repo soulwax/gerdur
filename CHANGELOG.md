@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.6.0 - 2026-08-31
+
+### Added
+
+- **`gerdur-core@^2.6.0`** — re-exports the Flow / radios / library surface:
+  `getUserFlow`, `getUserFavoriteTracks` / `Albums` / `Artists`,
+  `getUserPlaylists`, `getUserRadios`, `getUserChartTracks`, `getRadios`,
+  `getRadioTracks`, `getRadioGenres` + their types.
+- **`Session` methods**: `flow`, `favoriteTracks`, `favoriteAlbums`,
+  `favoriteArtists`, `playlists`, `userRadios`, `radios`, `radioTracks` — the
+  `userId` argument defaults to the logged-in user.
+- **CLI `flow` / `flow:<userId>` / `radio:<id>`** — pick tracks from your (or
+  another user's) Flow, or a radio's current playlist, and download them.
+  Headless-friendly.
+
 ## 2.5.0 - 2026-08-31
 
 ### Changed

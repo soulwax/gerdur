@@ -69,6 +69,9 @@ Throws if neither an `arl` nor email+password is provided, or if login fails.
 | `albumByUPC(upc)` | `Promise<albumTypePublicApi>` | Resolve a UPC/EAN → public-API album (with `tracks`). |
 | `trackPreview(track)` | `Promise<TrackPreview \| null>` | `{url, duration: 30}` for a track's preview clip (gw track, id, or number). |
 | `downloadPreview(track)` | `Promise<Buffer \| null>` | The 30-second preview clip as a `Buffer` — plain MP3, no decryption. |
+| `flow(userId?, limit?)` | `Promise<publicApiList<searchResultTrack>>` | Deezer **Flow**. `userId` defaults to the logged-in user. |
+| `favoriteTracks / favoriteAlbums / favoriteArtists / playlists (userId?, limit?)` | `Promise<publicApiList<…>>` | A user's library. `favoriteTracks` carries `time_add`. |
+| `userRadios(userId?)` / `radios()` / `radioTracks(radioId)` | `Promise<publicApiList<…>>` | Favourited radios / Deezer's radio list / a radio's tracklist. |
 | `getUser()` | `Promise<userType>` | The logged-in user profile. |
 | `getTrackBuffer(track, quality?, opts?)` | `Promise<Buffer \| null>` | Tagged audio in memory (no disk write). |
 | `streamTrack(track, quality?, opts?)` | `Promise<TrackStream>` | Download as a constant-memory stream of decrypted audio — `{stream, size, startedAt}`; `opts.onProgress` / `opts.resumeFrom`. |
@@ -225,7 +228,10 @@ dependency. Call after `initDeezerApi(arl)` or `createSession(...)`.
 `getEditorialList`, `getEditorialReleases`, `getEditorialSelection`,
 `getEditorialCharts`, `getArtistTopTracks`, `getRelatedArtists`,
 `getArtistAlbums`, `getArtistPlaylists`, `getArtistRadioTracks`, `getTrackByISRC`,
-`getAlbumByUPC`, `getTrackPreview`, `downloadPreview`, `formatName`, `toFormat`,
+`getAlbumByUPC`, `getUserFlow`, `getUserFavoriteTracks`, `getUserFavoriteAlbums`,
+`getUserFavoriteArtists`, `getUserPlaylists`, `getUserRadios`,
+`getUserChartTracks`, `getRadios`, `getRadioTracks`, `getRadioGenres`,
+`getTrackPreview`, `downloadPreview`, `formatName`, `toFormat`,
 `DEEZER_FORMATS`, `getUser`, `getTrackInfo`, `getAlbumInfo`, `getAlbumTracks`,
 `getPlaylistInfo`, `getPlaylistTracks`, `getArtistInfo`, `getDiscography`,
 `getLyrics`, `getTrackDownloadUrl`, `resolveDownloadUrls`, `streamTrackDownload`,
@@ -268,6 +274,16 @@ const {data: tracks} = await searchTracks(q, {limit: 25, order: 'RANKING'});
 | `getArtistRadioTracks(artistId)` | a radio seeded from the artist. |
 | `getTrackByISRC(isrc)` / `getAlbumByUPC(upc)` | barcode → public-API track / album. |
 
+### Flow, radios & library (public REST — take a `userId`)
+
+| Function | Notes |
+| :--- | :--- |
+| `getUserFlow(userId, limit?)` | Deezer Flow, as tracks. |
+| `getUserFavoriteTracks(userId, limit?, index?)` | loved tracks (with `time_add`). |
+| `getUserFavoriteAlbums` / `getUserFavoriteArtists` / `getUserPlaylists` | the rest of the library. |
+| `getUserRadios(userId)` / `getUserChartTracks(userId, limit?)` | favourited radios / personal chart. |
+| `getRadios()` / `getRadioTracks(radioId)` / `getRadioGenres()` | Deezer's radios. |
+
 ### Formats & previews
 
 | Function | Notes |
@@ -293,7 +309,8 @@ Search / browse types (also re-exported): `advancedSearchFilters`, `searchOrder`
 `chartTrack` / `chartAlbum` / `chartArtist` / `chartPlaylist` / `chartPodcast`,
 `genreType`, `editorialType`, `artistAlbumResult`, `TrackPreview`, `DeezerFormat`,
 `MediaFormat` (core's `Quality`), `StreamTrackOptions`, `TrackStream`,
-`StreamResponse`, `DeezerErrorPayload`.
+`StreamResponse`, `DeezerErrorPayload`, `userFavoriteTrack`, `userFavoriteAlbum`,
+`userFavoriteArtist`, `userPlaylistResult`, `radioResult`, `radioGenre`.
 
 Deezer entity types (`trackType`, `albumType`, `userType`, …) come from
 `gerdur-core/types`.

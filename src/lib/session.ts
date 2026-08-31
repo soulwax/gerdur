@@ -18,6 +18,14 @@ import {
   getTrackPreview,
   downloadPreview as fetchPreview,
   streamTrackDownload,
+  getUserFlow,
+  getUserFavoriteTracks,
+  getUserFavoriteAlbums,
+  getUserFavoriteArtists,
+  getUserPlaylists,
+  getUserRadios,
+  getRadios,
+  getRadioTracks,
 } from 'gerdur-core';
 import {loginWithEmail} from './email-login';
 import {getTrackBuffer, downloadTrackToFile} from './api-download';
@@ -39,6 +47,11 @@ import type {
   publicApiList,
   trackTypePublicApi,
   albumTypePublicApi,
+  userFavoriteTrack,
+  userFavoriteAlbum,
+  userFavoriteArtist,
+  userPlaylistResult,
+  radioResult,
 } from 'gerdur-core/types';
 import type {TrackPreview, StreamTrackOptions, TrackStream} from 'gerdur-core';
 
@@ -85,9 +98,22 @@ export class Session {
   public readonly arl: string;
   private concurrency: number;
 
+  private userId?: string;
+
   private constructor(arl: string, concurrency: number) {
     this.arl = arl;
     this.concurrency = concurrency;
+  }
+
+  /** The logged-in user's numeric id (cached). Used by the no-arg `flow` / `favorite*` methods. */
+  private async resolveUserId(explicit?: string | number): Promise<string> {
+    if (explicit !== undefined) {
+      return String(explicit);
+    }
+    if (!this.userId) {
+      this.userId = (await getUser()).USER_ID;
+    }
+    return this.userId;
   }
 
   /**
@@ -205,6 +231,50 @@ export class Session {
   /** Resolve a UPC/EAN barcode to the public-API album (with its `tracks`). */
   albumByUPC(upc: string): Promise<albumTypePublicApi> {
     return getAlbumByUPC(upc);
+  }
+
+  // ─── Flow, radios & library (public REST) ──────────────────────────────────
+  // `userId` defaults to the logged-in user (via `getUser`); their profile must
+  // be public for these to see it.
+
+  /** Deezer **Flow** — the endless personalised mix, as tracks. */
+  async flow(userId?: string | number, limit?: number): Promise<publicApiList<searchResultTrack>> {
+    return getUserFlow(await this.resolveUserId(userId), limit);
+  }
+
+  /** A user's favourite (loved) tracks, newest first (each with `time_add`). */
+  async favoriteTracks(userId?: string | number, limit?: number): Promise<publicApiList<userFavoriteTrack>> {
+    return getUserFavoriteTracks(await this.resolveUserId(userId), limit);
+  }
+
+  /** A user's favourite albums. */
+  async favoriteAlbums(userId?: string | number, limit?: number): Promise<publicApiList<userFavoriteAlbum>> {
+    return getUserFavoriteAlbums(await this.resolveUserId(userId), limit);
+  }
+
+  /** A user's favourite artists. */
+  async favoriteArtists(userId?: string | number, limit?: number): Promise<publicApiList<userFavoriteArtist>> {
+    return getUserFavoriteArtists(await this.resolveUserId(userId), limit);
+  }
+
+  /** A user's own + followed playlists. */
+  async playlists(userId?: string | number, limit?: number): Promise<publicApiList<userPlaylistResult>> {
+    return getUserPlaylists(await this.resolveUserId(userId), limit);
+  }
+
+  /** The radios a user has favourited. */
+  async userRadios(userId?: string | number): Promise<publicApiList<radioResult>> {
+    return getUserRadios(await this.resolveUserId(userId));
+  }
+
+  /** Deezer's curated radio list. */
+  radios(): Promise<publicApiList<radioResult>> {
+    return getRadios();
+  }
+
+  /** A radio's current tracklist — a ready-to-play (public-API) source. */
+  radioTracks(radioId: string | number): Promise<publicApiList<searchResultTrack>> {
+    return getRadioTracks(radioId);
   }
 
   /** The 30-second preview clip URL for a track (plain MP3 — no licence, no decryption). */

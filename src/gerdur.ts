@@ -13,6 +13,7 @@ import {
   getAlbumByUPC,
   getUserFlow,
   getRadioTracks,
+  getChartTracks,
   downloadPreview,
   parseInfo,
   getDiscography,
@@ -302,7 +303,8 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
           {
             type: 'text',
             name: 'query',
-            message: 'Enter a URL, a search term, or `search:` / `isrc:` / `upc:` / `flow` / `radio:<id>`:',
+            message:
+              'Enter a URL, a search term, or `search:` / `isrc:` / `upc:` / `flow` / `radio:<id>` / `chart[:<genre>]`:',
             validate: (value) => (value ? true : false),
           },
         ],
@@ -358,6 +360,17 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
       searchData = await pickAndHydrate(data, `radio:${rid}`);
       if (!searchData) {
         throw new Error(`Radio ${rid} returned no tracks.`);
+      }
+    }
+
+    // `chart` / `chart:<genreId>` — download from Deezer's weekly chart.
+    if (!searchData && url && (url === 'chart' || url.startsWith('chart:'))) {
+      const genreId = url.includes(':') ? url.slice('chart:'.length).trim() : 0;
+      console.log(signale.info(`Fetching chart${genreId ? ` for genre ${genreId}` : ''}…`));
+      const {data} = await getChartTracks(genreId, toFiniteNumber(options.searchLimit) ?? 50);
+      searchData = await pickAndHydrate(data, `chart:${genreId}`);
+      if (!searchData) {
+        throw new Error('Chart returned no tracks.');
       }
     }
 

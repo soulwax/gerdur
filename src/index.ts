@@ -73,6 +73,12 @@ export const getArl = async (email: string, password: string): Promise<string> =
 export {createSession, Session} from './lib/session';
 export type {SessionOptions, DownloadTracksOptions, SearchType} from './lib/session';
 
+// `gerdur-core`'s low-level session — an isolated client (its own `arl`, cache,
+// `license_token`) for talking to Deezer directly / from multiple accounts.
+// gerdur's `Session` above is the higher-level download-orchestration one.
+export {createSession as createCoreSession, Session as CoreSession, defaultSession} from 'gerdur-core';
+export type {SessionUserData} from 'gerdur-core';
+
 // ─── Download primitives ─────────────────────────────────────────────────────
 
 export {getTrackBuffer, getTaggedTrack, downloadTrackToFile} from './lib/api-download';
@@ -140,6 +146,7 @@ export {
   getTrackDownloadUrl,
   resolveDownloadUrls,
   streamTrackDownload,
+  downloadTrackBuffer,
   createDecryptStream,
   getStream,
   addTrackTags,

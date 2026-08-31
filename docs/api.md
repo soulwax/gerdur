@@ -235,7 +235,13 @@ dependency. Call after `initDeezerApi(arl)` or `createSession(...)`.
 `DEEZER_FORMATS`, `getUser`, `getTrackInfo`, `getAlbumInfo`, `getAlbumTracks`,
 `getPlaylistInfo`, `getPlaylistTracks`, `getArtistInfo`, `getDiscography`,
 `getLyrics`, `getTrackDownloadUrl`, `resolveDownloadUrls`, `streamTrackDownload`,
-`createDecryptStream`, `getStream`, `GeoBlocked`, `DeezerError`.
+`downloadTrackBuffer`, `createDecryptStream`, `getStream`, `GeoBlocked`,
+`DeezerError`.
+
+Low-level sessions (from `gerdur-core`): `createCoreSession(arl)`, `CoreSession`,
+`defaultSession` — an isolated Deezer client with its own `arl` / cache /
+`license_token` and `getTrackInfo` / `searchMusic` / `getTrackBuffer` / … methods,
+for multi-account use.
 
 ```ts
 await initDeezerApi(arl);

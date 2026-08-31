@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.7.0 - 2026-08-31
+
+### Added
+
+- **`gerdur-core@^2.9.0`** — re-exports `downloadTrackBuffer` (download + decrypt
+  to a `Buffer`) and the low-level session client as `createCoreSession` /
+  `CoreSession` / `defaultSession` (for talking to Deezer directly or from
+  multiple accounts — gerdur's own `Session` stays the download orchestrator).
+- **CLI `chart` / `chart:<genreId>`** — pick tracks from this week's Deezer chart
+  (optionally a genre) and download them. Headless-friendly.
+
+### Changed
+
+- Gateway retries are bounded and downloads are session-aware (via
+  `gerdur-core@2.4`–`2.9`); `license_token` refreshes proactively.
+
 ## 2.6.0 - 2026-08-31
 
 ### Added

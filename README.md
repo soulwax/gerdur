@@ -159,8 +159,11 @@ When `gerdur` asks for a URL, a search term, or a prefixed query:
 | `search:artist:"daft punk" bpm_min:120` | advanced track search (see operators below) |
 | `isrc:GBDUW0000059` | download the exact track for an ISRC |
 | `upc:0724384960650` | download the album for a UPC / EAN barcode |
+| `flow` | pick tracks from your Deezer **Flow** |
+| `flow:2064440442` | pick tracks from another user's Flow |
+| `radio:38305` | pick tracks from a radio's current playlist |
 
-`isrc:` and `upc:` also work in `--headless` mode (`-u isrc:…` / `-u upc:…`).
+`isrc:` / `upc:` / `flow` / `radio:` also work in `--headless` mode (`-u flow`, …).
 
 ### From flags (works headless)
 
@@ -258,6 +261,9 @@ Session methods:
 - **browse** — `genres`, `chart`, `chartTracks`, `editorialSections`,
   `artistTopTracks`, `relatedArtists`, `artistAlbums`, `artistRadio`,
   `trackByISRC`, `albumByUPC`
+- **flow / library** — `flow`, `favoriteTracks`, `favoriteAlbums`,
+  `favoriteArtists`, `playlists`, `userRadios`, `radios`, `radioTracks`
+  (the `userId` arg defaults to the logged-in user)
 - **user / download** — `getUser`, `getTrackBuffer`, `streamTrack`,
   `downloadTrack`, `downloadTracks`, `downloadUrl`, `trackPreview`, `downloadPreview`
 
@@ -319,6 +325,10 @@ or `createSession`):
   `getEditorialCharts`, `getArtistTopTracks`, `getRelatedArtists`,
   `getArtistAlbums`, `getArtistPlaylists`, `getArtistRadioTracks`,
   `getTrackByISRC`, `getAlbumByUPC`
+- **Flow / library** — `getUserFlow`, `getUserFavoriteTracks`,
+  `getUserFavoriteAlbums`, `getUserFavoriteArtists`, `getUserPlaylists`,
+  `getUserRadios`, `getUserChartTracks`, `getRadios`, `getRadioTracks`,
+  `getRadioGenres`
 - **Download** — `getTrackDownloadUrl`, `resolveDownloadUrls`,
   `streamTrackDownload`, `createDecryptStream`, `getStream`, `getTrackPreview`,
   `downloadPreview`, `formatName`, `toFormat`, `DEEZER_FORMATS`

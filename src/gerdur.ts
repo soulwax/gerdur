@@ -11,6 +11,8 @@ import {
   getTrackInfo,
   getTrackByISRC,
   getAlbumByUPC,
+  getUserFlow,
+  getRadioTracks,
   downloadPreview,
   parseInfo,
   getDiscography,
@@ -148,19 +150,14 @@ const stampVersion = (t: trackType): trackType => {
  * picks into download-ready gw tracks via `getTrackInfo`. Returns `null` when
  * nothing was matched or selected.
  */
-const resolveAdvancedSearch = async (filters: advancedSearchFilters): Promise<SearchData | null> => {
-  const limit = toFiniteNumber(options.searchLimit) ?? 50;
-  const {data: results, query, usedFallback} = await searchAdvancedTracks(filters, {limit});
-  if (!query) {
-    return null;
-  }
-  console.log(signale.info(`Searching Deezer for: ${chalk.cyan(query)}`));
-  if (usedFallback) {
-    console.log(signale.note('No matches for the operators — retried as a plain-text search.'));
-  }
-
+/**
+ * Given a list of public-API track objects (from search / flow / a radio), let
+ * the user pick (unless headless) and hydrate the picks into download-ready gw
+ * tracks via `getTrackInfo`.
+ */
+const pickAndHydrate = async (results: searchResultTrack[], id: string): Promise<SearchData | null> => {
   if (!results.length) {
-    console.log(signale.warn('No tracks matched that search.'));
+    console.log(signale.warn('Nothing to download.'));
     return null;
   }
 
@@ -171,7 +168,7 @@ const resolveAdvancedSearch = async (filters: advancedSearchFilters): Promise<Se
         {
           type: 'multiselect',
           name: 'items',
-          message: `Select tracks to download. ${results.length} matched.`,
+          message: `Select tracks to download. ${results.length} available.`,
           choices: results.map((r) => ({
             title: `${r.title} — ${r.artist?.name ?? 'Unknown'}`,
             value: r,
@@ -197,7 +194,20 @@ const resolveAdvancedSearch = async (filters: advancedSearchFilters): Promise<Se
     return null;
   }
 
-  return {info: {type: 'track', id: query}, linktype: 'track', linkinfo: {}, tracks};
+  return {info: {type: 'track', id}, linktype: 'track', linkinfo: {}, tracks};
+};
+
+const resolveAdvancedSearch = async (filters: advancedSearchFilters): Promise<SearchData | null> => {
+  const limit = toFiniteNumber(options.searchLimit) ?? 50;
+  const {data: results, query, usedFallback} = await searchAdvancedTracks(filters, {limit});
+  if (!query) {
+    return null;
+  }
+  console.log(signale.info(`Searching Deezer for: ${chalk.cyan(query)}`));
+  if (usedFallback) {
+    console.log(signale.note('No matches for the operators — retried as a plain-text search.'));
+  }
+  return pickAndHydrate(results, query);
 };
 
 /**
@@ -292,7 +302,7 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
           {
             type: 'text',
             name: 'query',
-            message: 'Enter a URL, a search term, or a `search:` / `isrc:` / `upc:` query:',
+            message: 'Enter a URL, a search term, or `search:` / `isrc:` / `upc:` / `flow` / `radio:<id>`:',
             validate: (value) => (value ? true : false),
           },
         ],
@@ -327,6 +337,28 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
       }
       console.log(signale.info(`UPC ${code} → ${found.title} (${found.nb_tracks} tracks)`));
       url = `https://www.deezer.com/album/${found.id}`;
+    }
+
+    // `flow:` / `flow:<userId>` — download from Deezer Flow.
+    if (!searchData && url && (url === 'flow' || url.startsWith('flow:'))) {
+      const uid = url.includes(':') ? url.slice('flow:'.length).trim() : (await getUser()).USER_ID;
+      console.log(signale.info(`Fetching Flow for user ${uid}…`));
+      const {data} = await getUserFlow(uid);
+      searchData = await pickAndHydrate(data, `flow:${uid}`);
+      if (!searchData) {
+        throw new Error('Flow returned no tracks (is the profile public?).');
+      }
+    }
+
+    // `radio:<id>` — download a radio's current tracklist.
+    if (!searchData && url && url.startsWith('radio:')) {
+      const rid = url.slice('radio:'.length).trim();
+      console.log(signale.info(`Fetching radio ${rid}…`));
+      const {data} = await getRadioTracks(rid);
+      searchData = await pickAndHydrate(data, `radio:${rid}`);
+      if (!searchData) {
+        throw new Error(`Radio ${rid} returned no tracks.`);
+      }
     }
 
     if (!searchData && !url.match(urlRegex)) {

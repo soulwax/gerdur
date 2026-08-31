@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.13.0 - 2026-08-31
+
+### Added
+
+- **`--fast`** — skip the expensive per-track metadata: full studio credits, BPM,
+  and the Musixmatch fallback for tracks Deezer has no lyrics for. Tagging is
+  what actually burns Deezer's rate limit (a 14-track album costs ~54 requests to
+  tag against 2 to fetch), and this takes that album to **7 requests — 81% fewer
+  against the quota**. Audio, cover, Deezer lyrics and `.lrc` sidecars are
+  unchanged; you lose credits, BPM and non-Deezer lyrics.
+- **`gerdur-core@^2.16.0`** for the underlying `lyricsFallback` option.
+
 ## 2.12.0 - 2026-08-31
 
 ### Changed

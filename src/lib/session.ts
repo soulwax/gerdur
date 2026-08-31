@@ -1,5 +1,21 @@
 import PQueue from 'p-queue';
-import {initDeezerApi, getUser, parseInfo, searchMusic, suggest} from 'gerdur-core';
+import {
+  initDeezerApi,
+  getUser,
+  parseInfo,
+  searchMusic,
+  suggest,
+  getChart,
+  getChartTracks,
+  getGenres,
+  getEditorialList,
+  getArtistTopTracks,
+  getRelatedArtists,
+  getArtistAlbums,
+  getArtistRadioTracks,
+  getTrackByISRC,
+  getAlbumByUPC,
+} from 'gerdur-core';
 import {loginWithEmail} from './email-login';
 import {getTrackBuffer, downloadTrackToFile} from './api-download';
 import {searchAdvancedTracks} from './search';
@@ -12,6 +28,14 @@ import type {
   publicApiSearchResponse,
   searchResultTrack,
   suggestResult,
+  chartType,
+  genreType,
+  editorialType,
+  artistAlbumResult,
+  searchResultArtist,
+  publicApiList,
+  trackTypePublicApi,
+  albumTypePublicApi,
 } from 'gerdur-core/types';
 
 /** Search result categories accepted by {@link Session.search}. */
@@ -125,6 +149,58 @@ export class Session {
   /** `deezer.suggest` autocomplete — for "as you type" UIs. `nb` caps items per type. */
   suggest(query: string, nb?: number): Promise<suggestResult> {
     return suggest(query, nb);
+  }
+
+  // ─── Browse & discovery (public REST) ──────────────────────────────────────
+
+  /** Deezer's genre list (`id` `0` = "All"). */
+  genres(): Promise<publicApiList<genreType>> {
+    return getGenres();
+  }
+
+  /** The five ranked lists for a genre (`0` = all): `{tracks, albums, artists, playlists, podcasts}`. */
+  chart(genreId: number | string = 0, limit = 10): Promise<chartType> {
+    return getChart(genreId, limit);
+  }
+
+  /** Just the track chart for a genre — a ready-to-download list. */
+  chartTracks(genreId: number | string = 0, limit = 100, index = 0): Promise<publicApiList<searchResultTrack>> {
+    return getChartTracks(genreId, limit, index);
+  }
+
+  /** Deezer's editorial sections. */
+  editorialSections(): Promise<publicApiList<editorialType>> {
+    return getEditorialList();
+  }
+
+  /** An artist's most popular tracks (public-API shape). */
+  artistTopTracks(artistId: number | string, limit = 50): Promise<publicApiList<searchResultTrack>> {
+    return getArtistTopTracks(artistId, limit);
+  }
+
+  /** Artists Deezer considers related / similar. */
+  relatedArtists(artistId: number | string, limit = 20): Promise<publicApiList<searchResultArtist>> {
+    return getRelatedArtists(artistId, limit);
+  }
+
+  /** An artist's discography (public-API album shape). */
+  artistAlbums(artistId: number | string, limit = 50, index = 0): Promise<publicApiList<artistAlbumResult>> {
+    return getArtistAlbums(artistId, limit, index);
+  }
+
+  /** A ready-made radio (track list) seeded from an artist. */
+  artistRadio(artistId: number | string): Promise<publicApiList<searchResultTrack>> {
+    return getArtistRadioTracks(artistId);
+  }
+
+  /** Resolve an ISRC to the public-API track. Pass `.id` to `getTrackInfo` to download. */
+  trackByISRC(isrc: string): Promise<trackTypePublicApi> {
+    return getTrackByISRC(isrc);
+  }
+
+  /** Resolve a UPC/EAN barcode to the public-API album (with its `tracks`). */
+  albumByUPC(upc: string): Promise<albumTypePublicApi> {
+    return getAlbumByUPC(upc);
   }
 
   /** Return a fully tagged audio Buffer for a track (nothing written to disk). */

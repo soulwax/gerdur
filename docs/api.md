@@ -57,6 +57,16 @@ Throws if neither an `arl` nor email+password is provided, or if login fails.
 | `search(query, types?, limit?)` | `Promise<searchType>` | Search Deezer (internal `pageSearch`). `types` defaults to `['TRACK']`. |
 | `searchAdvanced(filters, opts?)` | `Promise<publicApiSearchResponse<searchResultTrack>>` | Structured public-REST track search — `{query?, artist?, album?, track?, label?, durMin?, durMax?, bpmMin?, bpmMax?}` + `{order?, strict?, limit?, index?, fallback?}`. `fallback` (default `true`) retries an empty operator result as plain text. Returns public-API tracks (`isrc`, `preview`); fetch a hit's gw track with `getTrackInfo(id)` to download. |
 | `suggest(query, nb?)` | `Promise<suggestResult>` | `deezer.suggest` autocomplete (gw-shaped per-type arrays). |
+| `genres()` | `Promise<publicApiList<genreType>>` | Deezer's genre list (`id` `0` = "All"). |
+| `chart(genreId?, limit?)` | `Promise<chartType>` | The five ranked lists for a genre: `{tracks, albums, artists, playlists, podcasts}`. |
+| `chartTracks(genreId?, limit?, index?)` | `Promise<publicApiList<searchResultTrack>>` | Just the track chart — download-ready after `getTrackInfo`. |
+| `editorialSections()` | `Promise<publicApiList<editorialType>>` | Deezer's editorial section list. |
+| `artistTopTracks(artistId, limit?)` | `Promise<publicApiList<searchResultTrack>>` | An artist's most popular tracks. |
+| `relatedArtists(artistId, limit?)` | `Promise<publicApiList<searchResultArtist>>` | Similar / related artists. |
+| `artistAlbums(artistId, limit?, index?)` | `Promise<publicApiList<artistAlbumResult>>` | The artist's discography. |
+| `artistRadio(artistId)` | `Promise<publicApiList<searchResultTrack>>` | A radio (track list) seeded from an artist. |
+| `trackByISRC(isrc)` | `Promise<trackTypePublicApi>` | Resolve an ISRC → public-API track. `getTrackInfo(id)` to download. |
+| `albumByUPC(upc)` | `Promise<albumTypePublicApi>` | Resolve a UPC/EAN → public-API album (with `tracks`). |
 | `getUser()` | `Promise<userType>` | The logged-in user profile. |
 | `getTrackBuffer(track, quality?, opts?)` | `Promise<Buffer \| null>` | Tagged audio in memory (no disk write). |
 | `downloadTrack(track, quality?, opts?)` | `Promise<DownloadResult \| null>` | Download one track to disk. |
@@ -208,7 +218,11 @@ dependency. Call after `initDeezerApi(arl)` or `createSession(...)`.
 
 `initDeezerApi`, `parseInfo`, `searchMusic`, `searchPublicApi`, `searchTracks`,
 `searchAlbums`, `searchArtists`, `searchPlaylists`, `buildAdvancedQuery`,
-`suggest`, `getUser`, `getTrackInfo`, `getAlbumInfo`, `getAlbumTracks`,
+`suggest`, `getGenres`, `getChart`, `getChartTracks`, `getGenreArtists`,
+`getEditorialList`, `getEditorialReleases`, `getEditorialSelection`,
+`getEditorialCharts`, `getArtistTopTracks`, `getRelatedArtists`,
+`getArtistAlbums`, `getArtistPlaylists`, `getArtistRadioTracks`, `getTrackByISRC`,
+`getAlbumByUPC`, `getUser`, `getTrackInfo`, `getAlbumInfo`, `getAlbumTracks`,
 `getPlaylistInfo`, `getPlaylistTracks`, `getArtistInfo`, `getDiscography`,
 `getLyrics`, `getTrackDownloadUrl`, `resolveDownloadUrls`, `GeoBlocked`.
 
@@ -232,6 +246,23 @@ const {data: tracks} = await searchTracks(q, {limit: 25, order: 'RANKING'});
 | `buildAdvancedQuery(filters)` | pure; `{query?, artist?, album?, track?, label?, durMin?, durMax?, bpmMin?, bpmMax?}` → one query string. Operators bite reliably only on the track index. |
 | `suggest(query, nb?)` | `deezer.suggest` autocomplete. |
 
+### Browse functions (public REST — no `arl`)
+
+| Function | Notes |
+| :--- | :--- |
+| `getGenres()` | genre list; `id` `0` = "All". |
+| `getChart(genreId?, limit?)` | `{tracks, albums, artists, playlists, podcasts}` for a genre. |
+| `getChartTracks(genreId?, limit?, index?)` | just the track chart. |
+| `getGenreArtists(genreId)` | artists filed under a genre. |
+| `getEditorialList()` | Deezer's editorial sections. |
+| `getEditorialReleases(id?, limit?, index?)` / `getEditorialSelection(id?)` / `getEditorialCharts(id?)` | a section's new releases / picks / charts. |
+| `getArtistTopTracks(artistId, limit?)` | popular tracks. |
+| `getRelatedArtists(artistId, limit?)` | similar artists. |
+| `getArtistAlbums(artistId, limit?, index?)` | discography. |
+| `getArtistPlaylists(artistId, limit?)` | playlists featuring the artist. |
+| `getArtistRadioTracks(artistId)` | a radio seeded from the artist. |
+| `getTrackByISRC(isrc)` / `getAlbumByUPC(upc)` | barcode → public-API track / album. |
+
 ---
 
 ## Types
@@ -240,10 +271,12 @@ Exported TypeScript types: `SessionOptions`, `DownloadTracksOptions`,
 `SearchType`, `Quality`, `GetTrackBufferOptions`, `DownloadTrackOptions`,
 `DownloadResult`, `LoginResult`.
 
-Search types (also re-exported): `advancedSearchFilters`, `searchOrder`,
+Search / browse types (also re-exported): `advancedSearchFilters`, `searchOrder`,
 `searchEntity`, `publicApiSearchOptions`, `publicApiSearchResponse<T>`,
 `searchResultTrack`, `searchResultAlbum`, `searchResultArtist`,
-`searchResultPlaylist`, `suggestResult`.
+`searchResultPlaylist`, `suggestResult`, `publicApiList<T>`, `chartType`,
+`chartTrack` / `chartAlbum` / `chartArtist` / `chartPlaylist` / `chartPodcast`,
+`genreType`, `editorialType`, `artistAlbumResult`.
 
 Deezer entity types (`trackType`, `albumType`, `userType`, …) come from
 `gerdur-core/types`.

@@ -9,6 +9,8 @@ import {
   initDeezerApi,
   searchMusic,
   getTrackInfo,
+  getTrackByISRC,
+  getAlbumByUPC,
   parseInfo,
   getDiscography,
   resolveDownloadUrls,
@@ -240,7 +242,7 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
           {
             type: 'text',
             name: 'query',
-            message: 'Enter a URL, a search term, or `search:<advanced query>`:',
+            message: 'Enter a URL, a search term, or a `search:` / `isrc:` / `upc:` query:',
             validate: (value) => (value ? true : false),
           },
         ],
@@ -255,6 +257,26 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
       if (!searchData) {
         throw new Error('No tracks matched that search.');
       }
+    }
+
+    // `isrc:` / `upc:` — resolve a barcode to a Deezer track / album (works headless).
+    if (!searchData && url && url.startsWith('isrc:')) {
+      const code = url.slice('isrc:'.length).trim();
+      const found = await getTrackByISRC(code).catch(() => null);
+      if (!found) {
+        throw new Error(`No Deezer track for ISRC ${code}`);
+      }
+      const track = await getTrackInfo(String(found.id));
+      searchData = {info: {type: 'track', id: code}, linktype: 'track', linkinfo: {}, tracks: [stampVersion(track)]};
+    }
+    if (!searchData && url && url.startsWith('upc:')) {
+      const code = url.slice('upc:'.length).trim();
+      const found = await getAlbumByUPC(code).catch(() => null);
+      if (!found) {
+        throw new Error(`No Deezer album for UPC ${code}`);
+      }
+      console.log(signale.info(`UPC ${code} → ${found.title} (${found.nb_tracks} tracks)`));
+      url = `https://www.deezer.com/album/${found.id}`;
     }
 
     if (!searchData && !url.match(urlRegex)) {

@@ -147,7 +147,7 @@ All options are optional. You can suppress prompts via providing `quality` and `
 
 ### From the interactive prompt
 
-When `gerdur` asks for *"a URL, a search term, or `search:<advanced query>`"*:
+When `gerdur` asks for a URL, a search term, or a prefixed query:
 
 | Input | Does |
 | :--- | :--- |
@@ -156,6 +156,10 @@ When `gerdur` asks for *"a URL, a search term, or `search:<advanced query>`"*:
 | `album:discovery` | album search — pick an album |
 | `playlist:deep focus` | playlist search — pick a playlist |
 | `search:artist:"daft punk" bpm_min:120` | advanced track search (see operators below) |
+| `isrc:GBDUW0000059` | download the exact track for an ISRC |
+| `upc:0724384960650` | download the album for a UPC / EAN barcode |
+
+`isrc:` and `upc:` also work in `--headless` mode (`-u isrc:…` / `-u upc:…`).
 
 ### From flags (works headless)
 
@@ -235,10 +239,18 @@ const hits = await session.searchAdvanced(
 const suggestions = await session.suggest('daft'); // autocomplete
 ```
 
-Session methods: `parseUrl`, `search`, `searchAdvanced`, `suggest`, `getUser`,
-`getTrackBuffer`, `downloadTrack`, `downloadTracks`, `downloadUrl`. Every download
-call is silent; `downloadTracks` / `downloadUrl` accept `concurrency` and an
-`onProgress` callback and return one `{path, written} | null` per track.
+Session methods:
+
+- **resolve / search** — `parseUrl`, `search`, `searchAdvanced`, `suggest`
+- **browse** — `genres`, `chart`, `chartTracks`, `editorialSections`,
+  `artistTopTracks`, `relatedArtists`, `artistAlbums`, `artistRadio`,
+  `trackByISRC`, `albumByUPC`
+- **user / download** — `getUser`, `getTrackBuffer`, `downloadTrack`,
+  `downloadTracks`, `downloadUrl`
+
+Every download call is silent; `downloadTracks` / `downloadUrl` accept
+`concurrency` and an `onProgress` callback and return one `{path, written} | null`
+per track.
 
 `searchAdvanced(filters, options?)` builds a Deezer advanced-search query from
 `{query?, artist?, album?, track?, label?, durMin?, durMax?, bpmMin?, bpmMax?}`
@@ -246,6 +258,17 @@ and takes `{order?, strict?, limit?, index?, fallback?}`. Deezer's operators are
 unreliable, so an empty result is retried as a plain free-text query unless
 `fallback: false`. It returns public-API track objects — fetch a hit's gw track
 with `getTrackInfo(id)` before downloading it.
+
+```ts
+// Browse: this week's electro chart, download the top 5
+const {tracks} = await session.chart(106, 5);            // 106 = "Dance" genre
+const full = await Promise.all(tracks.data.map((t) => getTrackInfo(String(t.id))));
+await session.downloadTracks(full, 'flac');
+
+// Find & grab an exact recording by barcode
+const t = await session.trackByISRC('GBDUW0000059');
+await session.downloadTrack(await getTrackInfo(String(t.id)), '320');
+```
 
 ### Low-level: primitives
 
@@ -269,11 +292,17 @@ const {path, written} = (await downloadTrackToFile(track, 'flac', {output: '{ART
 So you don't need `gerdur-core` as a second dependency (call after `initDeezerApi`
 or `createSession`):
 
-`parseInfo`, `searchMusic`, `searchPublicApi`, `searchTracks`, `searchAlbums`,
-`searchArtists`, `searchPlaylists`, `buildAdvancedQuery`, `suggest`, `getUser`,
-`getTrackInfo`, `getAlbumInfo`, `getAlbumTracks`, `getPlaylistInfo`,
-`getPlaylistTracks`, `getArtistInfo`, `getDiscography`, `getLyrics`,
-`getTrackDownloadUrl`, `resolveDownloadUrls`, `GeoBlocked`.
+- **Query** — `parseInfo`, `getUser`, `getTrackInfo`, `getAlbumInfo`,
+  `getAlbumTracks`, `getPlaylistInfo`, `getPlaylistTracks`, `getArtistInfo`,
+  `getDiscography`, `getLyrics`
+- **Search** — `searchMusic`, `searchPublicApi`, `searchTracks`, `searchAlbums`,
+  `searchArtists`, `searchPlaylists`, `buildAdvancedQuery`, `suggest`
+- **Browse** — `getGenres`, `getChart`, `getChartTracks`, `getGenreArtists`,
+  `getEditorialList`, `getEditorialReleases`, `getEditorialSelection`,
+  `getEditorialCharts`, `getArtistTopTracks`, `getRelatedArtists`,
+  `getArtistAlbums`, `getArtistPlaylists`, `getArtistRadioTracks`,
+  `getTrackByISRC`, `getAlbumByUPC`
+- **Download** — `getTrackDownloadUrl`, `resolveDownloadUrls`, `GeoBlocked`
 
 ### Auth & config helpers
 

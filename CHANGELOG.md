@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.3.0 - 2026-08-31
+
+### Added
+
+- **`gerdur-core@^2.2.0`** — the browse / discovery surface is re-exported:
+  `getGenres`, `getChart`, `getChartTracks`, `getGenreArtists`,
+  `getEditorialList` / `getEditorialReleases` / `getEditorialSelection` /
+  `getEditorialCharts`, `getArtistTopTracks`, `getRelatedArtists`,
+  `getArtistAlbums`, `getArtistPlaylists`, `getArtistRadioTracks`,
+  `getTrackByISRC`, `getAlbumByUPC`, plus their types.
+- **`Session` browse methods**: `genres`, `chart`, `chartTracks`,
+  `editorialSections`, `artistTopTracks`, `relatedArtists`, `artistAlbums`,
+  `artistRadio`, `trackByISRC`, `albumByUPC`.
+- **CLI `isrc:` / `upc:` prefixes** — `gerdur -u isrc:GBDUW0000059` downloads the
+  exact track for an ISRC; `gerdur -u upc:0724384960650` downloads the album for
+  a barcode. Both work in `--headless` mode and from the interactive prompt.
+
 ## 2.2.0 - 2026-08-31
 
 ### Added

@@ -1,7 +1,22 @@
 {
   "name": "gerdur",
-  "version": "2.11.0",
-  "description": "The crucial streaming module for dabox systems.",
+  "version": "2.11.1",
+  "description": "Command-line music downloader for Deezer (Spotify/Tidal links resolved via ISRC matching) with automatic MP3/FLAC tagging, synced lyrics and a side-effect-free programmatic API.",
+  "keywords": [
+    "deezer",
+    "deezer-downloader",
+    "music-downloader",
+    "spotify",
+    "tidal",
+    "cli",
+    "flac",
+    "mp3",
+    "id3",
+    "lyrics",
+    "lrc",
+    "isrc",
+    "metadata"
+  ],
   "author": "Christian",
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {

@@ -192,6 +192,8 @@ Anywhere a URL is accepted (`-u`, the interactive prompt, or a line in
 | `radio:<id>` | a radio's current playlist |
 | `chart` · `chart:<genreId>` | this week's chart (optionally a genre) |
 | `artist-top:<artistId>` | an artist's most popular tracks |
+| `mix:<trackId>` | a "more like this" mix seeded from a track |
+| `library` · `favorites` | your own loved tracks (private library) |
 | `episode:<episodeId>` | a single podcast episode (plain MP3, saved to `Podcasts/`) |
 
 All of these work in `--headless` mode too (`gerdur -d -q 320 -u flow`).

@@ -166,6 +166,7 @@ All options are optional; the interactive prompt fills in the rest. Provide
 | `--search-limit` | | number | How many results to fetch (default 50) |
 | `--preview` | | — | Download 30-second `.preview.mp3` clips — no `--quality`, no `arl` |
 | `--enrich` | | — | Embed a higher-res cover from the Cover Art Archive (by ISRC) |
+| `--fast` | | — | Skip per-track credits, BPM and the Musixmatch lyrics fallback — **~81% fewer Deezer requests** |
 | `--update` | `-U` | — | Self-update (prebuilt binary only) |
 | `--help` | `-h` | — | Full help |
 
@@ -244,6 +245,30 @@ at 1800 px). No match or the services are down? It silently keeps Deezer's cover
 ```bash
 gerdur --enrich -q flac -u https://deezer.com/album/302127
 ```
+
+### Downloading a lot at once (`--fast`)
+
+Tagging, not downloading, is what burns through Deezer's rate limit: a 14-track
+album costs about **54 requests to tag** and 2 to fetch. Most of that is per-track
+— full credits and BPM (`song.getData` + a public lookup each), plus a Musixmatch
+scrape for every track Deezer has no lyrics for, which fails outright on many
+networks.
+
+`--fast` skips exactly those. Same audio, same cover, same Deezer lyrics, same
+`.lrc` sidecars:
+
+```bash
+gerdur --fast -q flac -u https://deezer.com/album/302127
+```
+
+| 14-track album | requests | against Deezer's quota |
+| :--- | ---: | ---: |
+| default | 54 | 36 |
+| `--fast` | **7** | **7** |
+
+You lose full studio credits, BPM, and lyrics for tracks Deezer doesn't carry.
+Worth it when you're pulling a large library and getting rate-limited; leave it
+off for a handful of tracks you care about.
 
 ### Output templates
 

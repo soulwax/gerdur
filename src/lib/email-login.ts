@@ -27,7 +27,21 @@ const UA = 'Mozilla/5.0 (X11; Linux x86_64; rv:123.0) Gecko/20100101 Firefox/123
 /** Discriminated result so the caller can branch on the failure reason. */
 export type LoginResult =
   | {ok: true; arl: string}
-  | {ok: false; reason: 'wrong-credentials' | 'no-arl' | 'network' | 'unknown'; message: string};
+  /**
+   * `rejected` means Deezer refused the login. It deliberately does **not** say
+   * "wrong password": the endpoint returns an identical error (code 160) for a
+   * real account, a wrong password and an address that does not exist, so the
+   * cause genuinely cannot be told apart from here.
+   */
+  | {ok: false; reason: 'rejected' | 'no-arl' | 'network' | 'unknown'; message: string};
+
+/**
+ * Deezer's `user_auth.php` error codes, as far as they can be told apart.
+ * `150` proves the request itself was well formed, which is how we know a `160`
+ * is about the account rather than the app hash.
+ */
+const AUTH_WRONG_HASH = 150;
+const AUTH_FAILED = 160;
 
 const md5 = (data: string): string => createHash('md5').update(Buffer.from(data, 'utf8')).digest('hex');
 
@@ -93,7 +107,24 @@ export const loginWithEmail = async (email: string, password: string): Promise<L
     }
 
     if (!accessToken && !jar.has('arl') && (authBody.error || auth.statusCode >= 400)) {
-      return {ok: false, reason: 'wrong-credentials', message: 'Login failed — check your email and password.'};
+      const code = authBody?.error?.code;
+      if (code === AUTH_WRONG_HASH) {
+        return {
+          ok: false,
+          reason: 'unknown',
+          message: 'Deezer rejected the request signature — the login flow has changed. Please paste an arl instead.',
+        };
+      }
+      return {
+        ok: false,
+        reason: 'rejected',
+        message:
+          code === AUTH_FAILED
+            ? 'Deezer refused the login. It returns this same response for a wrong password and for an address ' +
+              'that does not exist, and it currently refuses valid credentials too, so this is most likely the ' +
+              'flow being closed rather than anything wrong with your details. Paste an arl instead.'
+            : 'Deezer refused the login. Paste an arl instead.',
+      };
     }
 
     // 3. Read the arl for the now-authenticated session.

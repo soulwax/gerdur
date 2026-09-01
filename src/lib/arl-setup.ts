@@ -70,12 +70,27 @@ export const promptForArl = async (conf: Config): Promise<string | null> => {
 
 /**
  * Resolve email/password credentials from (in order): explicit config, then the
- * `GERDUR_EMAIL` / `GERDUR_PASSWORD` environment variables. Used for non-interactive
- * login attempts. Returns `null` if either half is missing.
+ * `GERDUR_EMAIL` / `GERDUR_PASSWORD` environment variables, then `DEEZER_EMAIL` /
+ * `DEEZER_PASSWORD`. Used for non-interactive login attempts. Returns `null` if
+ * either half is missing.
+ *
+ * The `DEEZER_*` spellings are accepted because that is what people tend to put
+ * in a `.env` next to their other Deezer settings; before, those were silently
+ * ignored and the login simply looked unconfigured.
  */
 export const resolveCredentials = (conf: Config): {email: string; password: string} | null => {
-  const email = ((conf.get('cookies.email') as string) || process.env.GERDUR_EMAIL || '').trim();
-  const password = ((conf.get('cookies.password') as string) || process.env.GERDUR_PASSWORD || '').trim();
+  const email = (
+    (conf.get('cookies.email') as string) ||
+    process.env.GERDUR_EMAIL ||
+    process.env.DEEZER_EMAIL ||
+    ''
+  ).trim();
+  const password = (
+    (conf.get('cookies.password') as string) ||
+    process.env.GERDUR_PASSWORD ||
+    process.env.DEEZER_PASSWORD ||
+    ''
+  ).trim();
   if (email && password) {
     return {email, password};
   }

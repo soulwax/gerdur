@@ -1,5 +1,43 @@
 # Changelog
 
+## 2.17.0 - 2026-08-31
+
+### Fixed
+
+- **`DEEZER_EMAIL` / `DEEZER_PASSWORD` are now read** as aliases for
+  `GERDUR_EMAIL` / `GERDUR_PASSWORD`. Those spellings are what people tend to put
+  in a `.env` alongside their other Deezer settings, and until now they were
+  silently ignored — the login just looked unconfigured.
+
+### Changed
+
+- **A refused login no longer blames your password.** It used to report
+  `wrong-credentials` with "check your email and password". That is not something
+  this code can know: Deezer's `user_auth.php` returns an identical error
+  (code 160) for a real account, a wrong password, **and** an address that does
+  not exist. The reason is now `rejected`, and the message says so.
+
+  Probed against the live endpoints while making this change, and every
+  documented password-to-`arl` path is currently refused:
+
+  | path | result |
+  | :--- | :--- |
+  | `connect.deezer.com/oauth/user_auth.php` | `authenticate user failed`, code 160 |
+  | `www.deezer.com/ajax/action.php` | `error` |
+  | `auth.deezer.com/login/arl` | 400 — needs a session the first two can't provide |
+
+  A deliberately malformed request returns a *different* error (code 150, "wrong
+  hash !"), which is how we know the request itself is still well formed and the
+  refusal is about authentication. **Paste an `arl` instead.** The code is kept
+  in case the flow returns, and `reason: 'rejected'` now carries an explanation
+  rather than a misdiagnosis.
+
+### Breaking (programmatic API, minor)
+
+- `LoginResult`'s `wrong-credentials` reason is renamed **`rejected`**. Anything
+  switching exhaustively on `reason` needs updating; `LoginError.reason` carries
+  the new value.
+
 ## 2.16.0 - 2026-08-31
 
 ### Changed

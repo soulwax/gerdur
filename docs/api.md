@@ -178,7 +178,9 @@ if (result.ok) {
 **`LoginResult`**
 
 - `{ok: true, arl: string}`
-- `{ok: false, reason: 'wrong-credentials' | 'no-arl' | 'network' | 'unknown', message: string}`
+- `{ok: false, reason: 'rejected' | 'no-arl' | 'network' | 'unknown', message: string}`
+
+  `rejected` deliberately does not claim "wrong password": Deezer returns an identical error for a real account, a wrong password and a non-existent address, so the cause cannot be told apart. As of 2026-08 every password-to-`arl` path is refused — paste an `arl` instead.
 
 ### class `LoginError`
 

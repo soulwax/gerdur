@@ -89,11 +89,20 @@ gerdur --set-arl <your_arl>
 To copy it manually: open <https://www.deezer.com> logged in → DevTools (`F12`) →
 Application → Cookies → `deezer.com` → copy the `arl` value (192 hex chars).
 
-**Log in with email &amp; password** — the guided setup can fetch the `arl` for you
-via Deezer's mobile OAuth flow, so you never open DevTools. Only the resulting
-`arl` is stored; your password is never written to disk unless you explicitly opt
-in when prompted. Deezer bot-protects scripted logins, so this is best-effort and
-falls back to pasting an `arl`.
+**Log in with email &amp; password** — the guided setup can try to fetch the `arl`
+from your credentials, so you never open DevTools. Only the resulting `arl` is
+stored; your password is never written to disk unless you explicitly opt in when
+prompted. Credentials are also read from `GERDUR_EMAIL` / `GERDUR_PASSWORD`, or
+`DEEZER_EMAIL` / `DEEZER_PASSWORD`.
+
+> **This currently does not work.** Every documented password-to-`arl` path is
+> refused: `connect.deezer.com/oauth/user_auth.php` answers `authenticate user
+> failed` (code 160), the web `action.php` login answers `error`, and
+> `auth.deezer.com/login/arl` needs a session you cannot get without the first
+> two. Deezer returns *the same* code 160 for a real account, a wrong password
+> and an address that does not exist, so a failure here says nothing about your
+> credentials. **Paste an `arl` instead** — `gerdur --set-arl <arl>` or
+> `GERDUR_ARL=<arl>`. The code is kept because the flow may come back.
 
 **Zero-config / CI** — set `GERDUR_ARL` (or `GERDUR_EMAIL` + `GERDUR_PASSWORD`)
 and skip the config file entirely. `GERDUR_ARL` takes precedence over the config
@@ -434,7 +443,7 @@ import {loginWithEmail, LoginError, Config, globalConfigPath} from 'gerdur';
 
 const result = await loginWithEmail('you@example.com', 'password');
 if (result.ok) console.log(result.arl);
-else console.error(result.reason, result.message); // 'wrong-credentials' | 'no-arl' | 'network' | 'unknown'
+else console.error(result.reason, result.message); // 'rejected' | 'no-arl' | 'network' | 'unknown'
 
 const conf = new Config();          // the same config the CLI uses
 conf.set('cookies.arl', 'xxx…');

@@ -1,6 +1,6 @@
 {
   "name": "gerdur",
-  "version": "2.16.0",
+  "version": "2.17.0",
   "description": "Command-line music downloader for Deezer (Spotify/Tidal links resolved via ISRC matching) with automatic MP3/FLAC tagging, synced lyrics and a side-effect-free programmatic API.",
   "keywords": [
     "deezer",

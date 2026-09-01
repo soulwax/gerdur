@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.15.0 - 2026-08-31
+
+### Changed
+
+- **`gerdur-core@^2.19.0`** — tagging gets substantially faster on any network
+  where Musixmatch is blocked (most datacentres, many home connections). The
+  lyrics fallback now latches off after three consecutive transport failures
+  instead of retrying it for every track forever: measured **2880 ms → 653 ms
+  per 14-track album, 77% faster**, once the latch trips. Nothing to configure;
+  `--fast` still skips the fallback outright from the first track.
+- Also picks up `gerdur-core@2.18.0`'s library write operations
+  (`addFavoriteTracks`, `followPlaylist`, `createPlaylist`, …), re-exported for
+  programmatic use.
+
 ## 2.14.0 - 2026-08-31
 
 ### Added

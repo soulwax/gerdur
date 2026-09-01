@@ -1220,10 +1220,10 @@ function-bind@^1.1.2:
   resolved "https://registry.yarnpkg.com/function-bind/-/function-bind-1.1.2.tgz#2c02d864d97f3ea6c8830c464cbd11ab6eab7a1c"
   integrity sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==
 
-gerdur-core@^2.17.0:
-  version "2.17.0"
-  resolved "https://registry.yarnpkg.com/gerdur-core/-/gerdur-core-2.17.0.tgz#4cc6d486c9de13781c93080e4ec05e6428f68249"
-  integrity sha512-63iwyEr6HLAHqw3supEXExM5PveThz/EkXB9bugxkIpN30ILl7AkNn0fcwcWOPSGzwnRDQyxD6uZBQ7fpEmcUg==
+gerdur-core@^2.19.0:
+  version "2.19.0"
+  resolved "https://registry.yarnpkg.com/gerdur-core/-/gerdur-core-2.19.0.tgz#44f5686980a31762878ed40c5823d84daffa55c9"
+  integrity sha512-TPx0kJKtHAjILV7tWBVuz7xe4Nxd2t+ALI7i0hqM6FEHBMLQI0lNBcsD0aT8CSgMPSiPdMg8TIabctWv7hCMrw==
   dependencies:
     browser-id3-writer "^4.4.0"
     delay "^5.0.0"

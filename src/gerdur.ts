@@ -4,7 +4,10 @@ import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'fs';
 import {dirname, join, resolve, sep} from 'path';
 import {Command} from 'commander';
 import gradient from 'gradient-string';
-import got from 'got';
+/* eslint-disable @typescript-eslint/no-var-requires */
+// `got` costs ~53 ms to require and is only needed once a transfer actually
+// starts — deferring it keeps `--help`, setup and the interactive prompt snappy.
+const got = (): typeof import('got').default => require('got');
 import {
   getUser,
   initDeezerApi,
@@ -467,7 +470,7 @@ const startDownload = async (saveLayout: any, url: string, skipPrompt: boolean) 
       console.log(signale.info(`Downloading episode: ${episode.EPISODE_TITLE}`));
       if (options.overwrite || !existsSync(dest)) {
         mkdirSync(dir, {recursive: true});
-        const {body} = await got(episode.EPISODE_DIRECT_STREAM_URL, {responseType: 'buffer'});
+        const {body} = await got()(episode.EPISODE_DIRECT_STREAM_URL, {responseType: 'buffer'});
         writeFileSync(dest, body);
       }
       console.log(signale.success(`Saved ${dest}`));

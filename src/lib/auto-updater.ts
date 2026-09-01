@@ -1,5 +1,8 @@
 import {existsSync, writeFileSync} from 'fs';
-import got from 'got';
+/* eslint-disable @typescript-eslint/no-var-requires */
+// `got` costs ~53 ms to require and is only needed once a transfer actually
+// starts — deferring it keeps `--help`, setup and the interactive prompt snappy.
+const got = (): typeof import('got').default => require('got');
 import AdmZip from 'adm-zip';
 import chalk from 'chalk';
 import logUpdate from 'log-update';
@@ -43,7 +46,7 @@ interface apiData {
 
 const updateCheck = async (pkg: any) => {
   const beta = pkg.version.includes('beta');
-  const releases: apiData[] = await got('https://api.github.com/repos/soulwax/gerdur/releases').json();
+  const releases: apiData[] = await got()('https://api.github.com/repos/soulwax/gerdur/releases').json();
   const data = releases.filter((r) => r.prerelease === beta)[0];
 
   if (data.tag_name > pkg.version) {
@@ -89,7 +92,7 @@ const updateBinary = async (pkg: any) => {
       const bar = progressBar(asset.size, 40);
       const humanSizeTotal = (asset.size / 1024 / 1024).toFixed(2);
 
-      const {body} = await got(asset.browser_download_url, {responseType: 'buffer'}).on(
+      const {body} = await got()(asset.browser_download_url, {responseType: 'buffer'}).on(
         'downloadProgress',
         ({transferred}) => {
           logUpdate(`  ${bar(transferred)} | ${humanSizeTotal}MiB`);

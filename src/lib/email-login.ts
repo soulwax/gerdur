@@ -1,5 +1,8 @@
 import {createHash} from 'crypto';
-import got from 'got';
+/* eslint-disable @typescript-eslint/no-var-requires */
+// `got` costs ~53 ms to require and is only needed once a transfer actually
+// starts — deferring it keeps `--help`, setup and the interactive prompt snappy.
+const got = (): typeof import('got').default => require('got');
 
 /**
  * Email/password -> arl login for Deezer.
@@ -62,7 +65,7 @@ export const loginWithEmail = async (email: string, password: string): Promise<L
 
   try {
     // 1. Bootstrap a session so Deezer sets an initial sid cookie.
-    const boot = await got('https://www.deezer.com', {
+    const boot = await got()('https://www.deezer.com', {
       method: 'POST',
       headers: {'User-Agent': UA},
       timeout: {request: 15000},
@@ -76,7 +79,7 @@ export const loginWithEmail = async (email: string, password: string): Promise<L
     const hash = md5([CLIENT_ID, email, passwordHash, CLIENT_SECRET].join(''));
 
     let accessToken: string | null = null;
-    const auth = await got('https://connect.deezer.com/oauth/user_auth.php', {
+    const auth = await got()('https://connect.deezer.com/oauth/user_auth.php', {
       searchParams: {app_id: CLIENT_ID, login: email, password: passwordHash, hash},
       headers: {'User-Agent': UA, cookie: cookieHeader(jar)},
       responseType: 'json',
@@ -94,7 +97,7 @@ export const loginWithEmail = async (email: string, password: string): Promise<L
     }
 
     // 3. Read the arl for the now-authenticated session.
-    const arlResp = await got('https://www.deezer.com/ajax/gw-light.php', {
+    const arlResp = await got()('https://www.deezer.com/ajax/gw-light.php', {
       searchParams: {method: 'user.getArl', input: 3, api_version: '1.0', api_token: 'null'},
       headers: {'User-Agent': UA, cookie: cookieHeader(jar)},
       responseType: 'json',

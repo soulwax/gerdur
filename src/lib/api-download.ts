@@ -1,6 +1,9 @@
 import {existsSync, mkdirSync, writeFileSync} from 'fs';
 import {dirname} from 'path';
-import got from 'got';
+/* eslint-disable @typescript-eslint/no-var-requires */
+// `got` costs ~53 ms to require and is only needed once a transfer actually
+// starts — deferring it keeps `--help`, setup and the interactive prompt snappy.
+const got = (): typeof import('got').default => require('got');
 import {getTrackDownloadUrl, addTrackTags, GeoBlocked, httpAgent, httpsAgent} from 'gerdur-core';
 import type {AddTrackTagsOptions} from 'gerdur-core';
 import {decryptDownload} from './decrypt';
@@ -69,7 +72,10 @@ const fetchDecryptTag = async (track: trackType, quality: Quality, options: GetT
       continue;
     }
 
-    const {body} = await got(trackData.trackUrl, {responseType: 'buffer', agent: {http: httpAgent, https: httpsAgent}});
+    const {body} = await got()(trackData.trackUrl, {
+      responseType: 'buffer',
+      agent: {http: httpAgent, https: httpsAgent},
+    });
     const decrypted = trackData.isEncrypted ? decryptDownload(body, track.SNG_ID) : body;
     return addTrackTags(decrypted, track, tagOptions(options));
   }

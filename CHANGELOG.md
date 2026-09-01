@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.16.0 - 2026-08-31
+
+### Changed
+
+- **The CLI starts about twice as fast: ~249 ms → 120 ms** (min of 10 runs;
+  mean 137 ms). Two things were being loaded before they could possibly be
+  needed:
+  - `gerdur-core@^2.20.0` now defers the Spotify SDK and the HTML parser, so
+    `require('gerdur-core')` costs 43 ms instead of 160 ms.
+  - `got` (~53 ms to require) is now loaded on first use rather than at import.
+    Every call site was already inside a function, so this is a pure deferral —
+    but it means `--help`, `gerdur setup`, `--set-arl` and the interactive prompt
+    no longer pay for an HTTP client before you have typed anything.
+
+  Verified against live downloads: a full 320 kbps track (9.19 MB, 226 s,
+  decodes clean under ffmpeg) and a `--preview` clip (480 KB, 30 s).
+
 ## 2.15.0 - 2026-08-31
 
 ### Changed

@@ -1,4 +1,7 @@
-import got from 'got';
+/* eslint-disable @typescript-eslint/no-var-requires */
+// `got` costs ~53 ms to require and is only needed once a transfer actually
+// starts — deferring it keeps `--help`, setup and the interactive prompt snappy.
+const got = (): typeof import('got').default => require('got');
 import stream from 'stream';
 import {
   existsSync,
@@ -213,7 +216,7 @@ const downloadTrack = async ({
     const humanSizeTotal = (fileSize / 1024 / 1024).toFixed(2);
     let transferredLast = downloaded;
     await pipeline(
-      got
+      got()
         .stream(trackData.trackUrl, {
           responseType: 'buffer',
           headers,
